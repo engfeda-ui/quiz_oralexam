@@ -1,0 +1,433 @@
+/* Styling for Moodle Oral Exam Evaluator (quiz_oralexam) */
+
+.oralexam-container {
+    max-width: 1350px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Stats Cards Grid */
+.oralexam-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.oralexam-stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.oralexam-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.oralexam-stat-card .stat-icon {
+    font-size: 2.2rem;
+    margin-right: 15px;
+    opacity: 0.85;
+}
+
+[dir="rtl"] .oralexam-stat-card .stat-icon {
+    margin-right: 0;
+    margin-left: 15px;
+}
+
+.oralexam-stat-card.stat-total .stat-icon { color: #0284c7; }
+.oralexam-stat-card.stat-evaluated .stat-icon { color: #16a34a; }
+.oralexam-stat-card.stat-pending .stat-icon { color: #ea580c; }
+.oralexam-stat-card.stat-avg .stat-icon { color: #8b5cf6; }
+
+.stat-card-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-title {
+    font-size: 0.82rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* Controls Bar */
+.oralexam-controls-card {
+    background: #ffffff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Main Two-Column Grid */
+.oralexam-main-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 992px) {
+    .oralexam-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Left Sidebar (Candidates) */
+.oralexam-sidebar {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    max-height: 820px;
+    display: flex;
+    flex-direction: column;
+}
+
+.oralexam-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.oralexam-search-box {
+    margin-bottom: 12px;
+}
+
+.oralexam-candidate-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.oralexam-candidate-item {
+    border-radius: 8px;
+    margin-bottom: 6px;
+    transition: background 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.oralexam-candidate-item a {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.oralexam-candidate-item:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.oralexam-candidate-item.active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.cand-avatar {
+    margin-right: 12px;
+}
+
+[dir="rtl"] .cand-avatar {
+    margin-right: 0;
+    margin-left: 12px;
+}
+
+.cand-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cand-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cand-idnumber {
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.cand-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 0.75rem;
+}
+
+[dir="rtl"] .cand-badge {
+    align-items: flex-start;
+}
+
+.cand-badge.status-done .cand-status-text {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.cand-badge.status-done .cand-score-text {
+    background: #dcfce7;
+    color: #166534;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.cand-badge.status-wait .cand-status-text {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.cand-badge.status-wait .cand-score-text {
+    color: #94a3b8;
+}
+
+/* Right Content Area */
+.oralexam-sheet-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    padding: 24px;
+}
+
+.student-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 24px;
+}
+
+.student-header-main {
+    display: flex;
+    align-items: center;
+}
+
+.student-header-main .userpicture {
+    margin-right: 18px;
+}
+
+[dir="rtl"] .student-header-main .userpicture {
+    margin-right: 0;
+    margin-left: 18px;
+}
+
+.student-fullname {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: #0f172a;
+}
+
+/* Questions Deck */
+.oralexam-questions-deck {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.oralexam-qcard {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.oralexam-qcard:hover {
+    border-color: #94a3b8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.qcard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.qcard-slot-badge {
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.qcard-maxmark-badge {
+    background: #e2e8f0;
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+}
+
+.qcard-questiontext {
+    font-size: 1rem;
+    line-height: 1.55;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+/* Competency Pill */
+.qcard-competencies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.comp-pill {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Scoring Bar */
+.qcard-scoring-bar {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.scoring-label {
+    font-size: 0.88rem;
+    color: #475569;
+}
+
+.quick-btn-group {
+    display: flex;
+    gap: 6px;
+}
+
+.quick-btn {
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+.mark-input-wrapper {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    gap: 6px;
+}
+
+[dir="rtl"] .mark-input-wrapper {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.mark-input {
+    width: 75px;
+    height: 38px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    border: 2px solid #cbd5e1;
+}
+
+.mark-input:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.mark-denom {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* Sticky Footer */
+.oralexam-sticky-footer {
+    position: sticky;
+    bottom: 20px;
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 14px 24px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+}
+
+.sticky-footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.live-total-box {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.total-label {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.total-score-value {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #38bdf8;
+}
+
+.total-denom {
+    font-size: 1.1rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Empty State */
+.oralexam-empty-state {
+    padding: 80px 20px;
+    text-align: center;
+    color: #64748b;
+}
