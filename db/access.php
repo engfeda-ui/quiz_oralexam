@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
- = [
+$capabilities = [
     'quiz/oralexam:view' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
