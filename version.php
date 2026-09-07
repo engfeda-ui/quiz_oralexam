@@ -24,12 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026090700;
+$plugin->version   = 2026090701;
 $plugin->requires  = 2022041900; // Moodle 4.0 minimum.
 $plugin->supported = [400, 500]; // Moodle 4.0 - 5.0+.
 $plugin->component = 'quiz_oralexam';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.0.0';
+$plugin->release   = 'v1.0.1';
 $plugin->dependencies = [
     'mod_quiz' => ANY_VERSION,
 ];

@@ -17,7 +17,7 @@
 /**
  * Evaluator helper class for quiz_oralexam.
  *
- * Handles candidate fetching, question & competency resolution,
+ * Handles candidate fetching (students only), question & competency resolution,
  * programmatic attempt creation, and question-by-question scoring.
  *
  * @package    quiz_oralexam
@@ -50,7 +50,8 @@ class evaluator {
     }
 
     /**
-     * Fetch enrolled candidates for this quiz with their current oral evaluation status.
+     * Fetch enrolled student candidates for this quiz with their current oral evaluation status.
+     * Strictly filters to users with student role (excluding teachers, trainers, and managers).
      *
      * @param int $courseid
      * @param \context_module $context
@@ -61,27 +62,38 @@ class evaluator {
     public static function get_candidates(int $courseid, \context_module $context, int $quizid, int $groupid = 0): array {
         global $DB;
 
-        $userfields = \user_picture::fields('u', ['idnumber', 'department', 'institution']);
-        $sql = "SELECT $userfields
-                  FROM {user} u
-                  JOIN {enrol} e ON e.courseid = :courseid AND e.status = :enrolstatus
-                  JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.status = :uestatus";
+        $coursecontext = \context_course::instance($courseid);
+        $studentrole = $DB->get_record('role', ['shortname' => 'student']);
 
-        $params = [
-            'courseid'    => $courseid,
-            'enrolstatus' => ENROL_INSTANCE_ENABLED,
-            'uestatus'    => ENROL_USER_ACTIVE,
-            'quizid'      => $quizid,
-        ];
+        $userfields = 'u.id, u.firstname, u.lastname, u.idnumber, u.department, u.institution, u.email, u.picture, u.imagealt';
 
-        if ($groupid > 0) {
-            $sql .= " JOIN {groups_members} gm ON gm.userid = u.id AND gm.groupid = :groupid";
-            $params['groupid'] = $groupid;
+        if ($studentrole) {
+            $users = get_role_users(
+                $studentrole->id,
+                $coursecontext,
+                false,
+                $userfields,
+                'u.lastname ASC, u.firstname ASC',
+                false,
+                $groupid
+            );
+        } else {
+            $allusers = get_enrolled_users(
+                $context,
+                'mod/quiz:attempt',
+                $groupid,
+                $userfields,
+                'u.lastname ASC, u.firstname ASC'
+            );
+            $users = [];
+            foreach ($allusers as $u) {
+                // Exclude teachers/graders.
+                if (!has_capability('mod/quiz:grade', $context, $u)) {
+                    $users[$u->id] = $u;
+                }
+            }
         }
 
-        $sql .= " WHERE u.deleted = 0 AND u.suspended = 0 ORDER BY u.lastname ASC, u.firstname ASC";
-
-        $users = $DB->get_records_sql($sql, $params);
         if (empty($users)) {
             return [];
         }
@@ -144,7 +156,8 @@ class evaluator {
         global $DB;
 
         $quizobj = self::get_quiz_object($quizid, $studentid);
-        $slots = $quizobj->get_slots();
+        $structure = $quizobj->get_structure();
+        $slots = $structure->get_slots();
 
         $quba = null;
         if ($attemptid > 0) {
@@ -282,6 +295,8 @@ class evaluator {
         global $DB, $USER;
 
         $quizobj = self::get_quiz_object($quiz->id, $studentid);
+        $structure = $quizobj->get_structure();
+        $slots = $structure->get_slots();
         $timenow = time();
 
         if ($existingattemptid > 0) {
@@ -313,7 +328,6 @@ class evaluator {
         }
 
         // Apply grades for each slot.
-        $slots = $quizobj->get_slots();
         foreach ($slots as $slot) {
             $slotno = (int)$slot->slot;
             $maxmark = (float)$slot->maxmark;

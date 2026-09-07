@@ -44,7 +44,13 @@ class quiz_oralexam_report extends quiz_default_report {
         require_capability('quiz/oralexam:view', $context);
         $canevaluate = has_capability('quiz/oralexam:evaluate', $context);
 
-        $selectedgroup = optional_param('group', 0, PARAM_INT);
+        // Group handling: respect Moodle's active group.
+        $currentgroup = groups_get_activity_group($cm, true);
+        if ($currentgroup === false) {
+            $currentgroup = optional_param('group', 0, PARAM_INT);
+        }
+        $selectedgroup = $currentgroup;
+
         $selectedstudent = optional_param('student', 0, PARAM_INT);
         $action = optional_param('action', '', PARAM_ALPHA);
         $attemptid = optional_param('attemptid', 0, PARAM_INT);
@@ -91,7 +97,7 @@ class quiz_oralexam_report extends quiz_default_report {
 
                 \core\notification::success(get_string('evaluationsaved', 'quiz_oralexam', $studentname));
 
-                // Redirect back to group list or keep candidate selection.
+                // Redirect back keeping candidate selected.
                 $redirecturl = clone $baseurl;
                 $redirecturl->param('student', $poststudentid);
                 redirect($redirecturl);
@@ -103,7 +109,7 @@ class quiz_oralexam_report extends quiz_default_report {
         // Print header.
         $this->print_header_and_tabs($cm, $course, $quiz, 'oralexam');
 
-        // Fetch candidates.
+        // Fetch students only.
         $candidates = \quiz_oralexam\evaluator::get_candidates($course->id, $context, $quiz->id, $selectedgroup);
 
         // Stats calculation.
@@ -121,7 +127,6 @@ class quiz_oralexam_report extends quiz_default_report {
             }
         }
         $avgscore = $evaluatedcount > 0 ? round($totalscore / $evaluatedcount, 1) : 0;
-        $quizmaxgrade = (float)$quiz->grade;
         $quizsumgrades = (float)$quiz->sumgrades;
 
         echo html_writer::start_div('oralexam-container');
@@ -166,7 +171,7 @@ class quiz_oralexam_report extends quiz_default_report {
                 $candurl->param('student', $uid);
 
                 echo html_writer::start_tag('li', ['class' => 'oralexam-candidate-item' . $activeclass, 'data-name' => strtolower(fullname($u) . ' ' . $u->idnumber)]);
-                echo html_writer::start_tag('a', ['href' => $candurl->out()]);
+                echo html_writer::start_tag('a', ['href' => $candurl->out(false)]);
 
                 echo html_writer::start_div('cand-avatar');
                 echo $OUTPUT->user_picture($u, ['size' => 42]);
@@ -194,14 +199,38 @@ class quiz_oralexam_report extends quiz_default_report {
         // Column Right: Active Evaluation Sheet.
         echo html_writer::start_div('oralexam-content');
 
-        if ($selectedstudent > 0 && isset($candidates[$selectedstudent])) {
-            $activecand = $candidates[$selectedstudent];
+        // Check if selected student exists in candidates, or load user directly if selected.
+        $activecand = null;
+        if ($selectedstudent > 0) {
+            if (isset($candidates[$selectedstudent])) {
+                $activecand = $candidates[$selectedstudent];
+            } else {
+                // If student was selected from another group filter, load user details.
+                $selecteduser = $DB->get_record('user', ['id' => $selectedstudent]);
+                if ($selecteduser) {
+                    $candatts = $DB->get_records('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $selectedstudent], 'attempt ASC');
+                    $lastatt = !empty($candatts) ? end($candatts) : null;
+                    $status = ($lastatt && ($lastatt->state === 'finished' || $lastatt->state === \mod_quiz\quiz_attempt::FINISHED)) ? 'evaluated' : 'pending';
+                    $activecand = (object)[
+                        'user'          => $selecteduser,
+                        'status'        => $status,
+                        'attemptid'     => $lastatt ? (int)$lastatt->id : 0,
+                        'attemptnumber' => $lastatt ? (int)$lastatt->attempt : 0,
+                        'grade'         => $lastatt ? (float)$lastatt->sumgrades : null,
+                        'timefinish'    => $lastatt ? (int)$lastatt->timefinish : 0,
+                        'attemptcount'  => count($candatts),
+                    ];
+                }
+            }
+        }
+
+        if ($activecand) {
             $this->render_evaluation_sheet($quiz, $cm, $course, $activecand, $baseurl, $canevaluate, $isnewattempt);
         } else {
             echo html_writer::start_div('oralexam-empty-state');
             echo html_writer::tag('i', '', ['class' => 'fa fa-user-circle-o fa-5x text-muted']);
             echo html_writer::tag('h3', get_string('selectstudent', 'quiz_oralexam'));
-            echo html_writer::tag('p', get_string('nostudentsfound', 'quiz_oralexam'), ['class' => 'text-muted']);
+            echo html_writer::tag('p', 'اضغط على أي طالب من القائمة الجانبية لبدء استمارة التقييم الشفهي ورصد الدرجات.', ['class' => 'text-muted']);
             echo html_writer::end_div();
         }
 
