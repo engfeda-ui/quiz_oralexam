@@ -27,15 +27,21 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/mod/quiz/report/default.php');
 require_once(__DIR__ . '/classes/evaluator.php');
 
+/**
+ * Quiz report subplugin: Oral Exam Evaluator report class.
+ *
+ * @package    quiz_oralexam
+ * @copyright  2026 Mahmoud Salem
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class quiz_oralexam_report extends quiz_default_report {
-
     /**
      * Display the oral exam evaluation interface.
      *
-     * @param stdClass $quiz
-     * @param stdClass $cm
-     * @param stdClass $course
-     * @return bool
+     * @param \stdClass $quiz The quiz record.
+     * @param \stdClass $cm The course module record.
+     * @param \stdClass $course The course record.
+     * @return bool True if displayed successfully.
      */
     public function display($quiz, $cm, $course) {
         global $CFG, $DB, $PAGE, $OUTPUT, $USER;
@@ -80,7 +86,6 @@ class quiz_oralexam_report extends quiz_default_report {
                 $DB->set_field('quizaccess_oralexam', 'oralexamenabled', 1, ['quizid' => $quiz->id]);
             }
         }
-
 
         // Handle POST submission: Save evaluation.
         $ispost = data_submitted() && confirm_sesskey();
@@ -307,6 +312,15 @@ class quiz_oralexam_report extends quiz_default_report {
 
     /**
      * Render evaluation questions sheet for a student.
+     *
+     * @param \stdClass $quiz The quiz record.
+     * @param \stdClass $cm The course module record.
+     * @param \stdClass $course The course record.
+     * @param \stdClass $candidate The candidate object with student details.
+     * @param \moodle_url $baseurl The base report URL.
+     * @param bool $canevaluate Whether the user has evaluation capabilities.
+     * @param int $isnewattempt Whether a new attempt is initiated (0 or 1).
+     * @return void
      */
     protected function render_evaluation_sheet($quiz, $cm, $course, $candidate, $baseurl, $canevaluate, $isnewattempt = 0) {
         global $OUTPUT, $USER, $DB;
@@ -478,7 +492,7 @@ class quiz_oralexam_report extends quiz_default_report {
                 'class' => 'form-control mark-input text-center font-weight-bold',
                 'placeholder' => '0.0',
                 'oninput' => 'recalcTotal()',
-                // Optional mark input
+                // Optional mark input.
                 'required' => false,
             ]);
             echo html_writer::tag('span', "/ $maxmark", ['class' => 'mark-denom']);
@@ -531,6 +545,12 @@ class quiz_oralexam_report extends quiz_default_report {
 
     /**
      * Render single KPI stat card.
+     *
+     * @param string $title The card title.
+     * @param string|int|float $value The value to display.
+     * @param string $class CSS modifier class.
+     * @param string $icon FontAwesome icon class name.
+     * @return void
      */
     protected function render_stat_card($title, $value, $class, $icon) {
         echo html_writer::start_div('oralexam-stat-card ' . $class);
@@ -543,15 +563,20 @@ class quiz_oralexam_report extends quiz_default_report {
     }
 
     /**
-     * Inline JavaScript for instant evaluation interactions.
+     * Output inline JavaScript for candidate filtering and live score calculation.
+     *
+     * @return void
      */
     protected function render_inline_scripts() {
-        ?>
-        <script>
+        $warnmsg = json_encode(get_string('unratedwarning', 'quiz_oralexam', '{{count}}'));
+        $confirmmsg = json_encode(get_string('confirmfinish', 'quiz_oralexam'));
+        $submittingmsg = json_encode(get_string('submitting', 'quiz_oralexam'));
+
+        $js = <<<JS
         function normalizeSearchText(str) {
             if (!str) return '';
             return str.toLowerCase()
-                .replace(/[\u064B-\u065F\u0670]/g, '') // Remove Arabic tashkeel/diacritics
+                .replace(/[\u064B-\u065F\u0670]/g, '') // Remove Arabic tashkeel/diacritics.
                 .replace(/[أإآ]/g, 'ا')
                 .replace(/ة/g, 'ه')
                 .replace(/ى/g, 'ي')
@@ -610,17 +635,17 @@ class quiz_oralexam_report extends quiz_default_report {
 
             var confirmMsg = '';
             if (emptyCount > 0) {
-                var tpl = <?php echo json_encode(get_string('unratedwarning', 'quiz_oralexam', '{{count}}')); ?>;
+                var tpl = {$warnmsg};
                 confirmMsg = tpl.replace('{{count}}', emptyCount);
             } else {
-                confirmMsg = <?php echo json_encode(get_string('confirmfinish', 'quiz_oralexam')); ?>;
+                confirmMsg = {$confirmmsg};
             }
 
             if (!confirm(confirmMsg)) {
                 return false;
             }
 
-            // Fill all empty mark inputs with 0 before submission so they are recorded as zero
+            // Fill all empty mark inputs with 0 before submission so they are recorded as zero.
             inputs.forEach(function(inp) {
                 var v = inp.value.trim();
                 if (v === '' || isNaN(parseFloat(v))) {
@@ -630,8 +655,8 @@ class quiz_oralexam_report extends quiz_default_report {
 
             var btn = document.getElementById('submitOralExamBtn');
             if (btn) {
-                btn.innerText = <?php echo json_encode(get_string('submitting', 'quiz_oralexam')); ?>;
-                // Allow form submit without synchronously disabling the button
+                btn.innerText = {$submittingmsg};
+                // Allow form submit without synchronously disabling the button.
             }
             return true;
         }
@@ -640,7 +665,8 @@ class quiz_oralexam_report extends quiz_default_report {
         document.addEventListener('DOMContentLoaded', function() {
             recalcTotal();
         });
-        </script>
-        <?php
+JS;
+
+        echo \html_writer::tag('script', $js);
     }
 }

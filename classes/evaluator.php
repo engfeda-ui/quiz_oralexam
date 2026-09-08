@@ -36,13 +36,12 @@ require_once($CFG->libdir . '/questionlib.php');
  * Manages question loading, competency mapping, candidate listing, and attempt submission.
  */
 class evaluator {
-
     /**
      * Get or create a quiz object for an oral examination session.
      *
-     * @param int $quizid
-     * @param int $userid
-     * @return \mod_quiz\quiz_settings
+     * @param int $quizid The quiz ID.
+     * @param int $userid The user ID.
+     * @return \mod_quiz\quiz_settings The quiz settings object.
      */
     public static function get_quiz_object(int $quizid, int $userid = 0): \mod_quiz\quiz_settings {
         return \mod_quiz\quiz_settings::create($quizid, $userid);
@@ -74,7 +73,7 @@ class evaluator {
 
         // 3. Find all users assigned the student role in this course context.
         if (!empty($studentroleids)) {
-            list($rolesql, $roleparams) = $DB->get_in_or_equal($studentroleids, SQL_PARAMS_NAMED, 'srole');
+            [$rolesql, $roleparams] = $DB->get_in_or_equal($studentroleids, SQL_PARAMS_NAMED, 'srole');
             $sql = "SELECT DISTINCT ra.userid
                       FROM {role_assignments} ra
                      WHERE ra.contextid = :ctxid AND ra.roleid $rolesql";
@@ -87,7 +86,7 @@ class evaluator {
 
         // 4. Exclude any users who have staff/teacher roles in this context or course.
         if (!empty($staffroleids)) {
-            list($staffsql, $staffparams) = $DB->get_in_or_equal($staffroleids, SQL_PARAMS_NAMED, 'staffrole');
+            [$staffsql, $staffparams] = $DB->get_in_or_equal($staffroleids, SQL_PARAMS_NAMED, 'staffrole');
             $sql2 = "SELECT DISTINCT ra.userid
                        FROM {role_assignments} ra
                       WHERE ra.contextid IN (:cctxid, :mctxid) AND ra.roleid $staffsql";
@@ -119,14 +118,14 @@ class evaluator {
         }
 
         // 6. Fetch user profiles.
-        list($uidsql, $uidparams) = $DB->get_in_or_equal($alloweduserids, SQL_PARAMS_NAMED, 'uid');
+        [$uidsql, $uidparams] = $DB->get_in_or_equal($alloweduserids, SQL_PARAMS_NAMED, 'uid');
         $userwhere = "id $uidsql AND deleted = 0 AND suspended = 0";
         $users = $DB->get_records_select('user', $userwhere, $uidparams, 'firstname ASC, lastname ASC');
 
         // 7. Attach quiz attempt / evaluation status for each candidate (batch fetched to avoid N+1 queries).
         $attemptsbyuser = [];
         if (!empty($users)) {
-            list($attusersql, $attparams) = $DB->get_in_or_equal(array_keys($users), SQL_PARAMS_NAMED, 'attuser');
+            [$attusersql, $attparams] = $DB->get_in_or_equal(array_keys($users), SQL_PARAMS_NAMED, 'attuser');
             $allattempts = $DB->get_records_select(
                 'quiz_attempts',
                 "quiz = :quizid AND userid $attusersql",
@@ -223,7 +222,7 @@ class evaluator {
                         }
                     }
                 } catch (\Exception $e) {
-                    // Slot not in usage yet.
+                    unset($e); // Intentionally ignore: slot not in usage yet.
                 }
             }
 
@@ -248,9 +247,9 @@ class evaluator {
      * Retrieve competencies associated with a question.
      * Integrates with qbank_comp_ext_qmap and falls back to question tags.
      *
-     * @param int $questionid
-     * @param int $courseid
-     * @return array
+     * @param int $questionid The question ID.
+     * @param int $courseid The course ID.
+     * @return array Array of competency tags.
      */
     public static function get_question_competencies(int $questionid, int $courseid): array {
         global $DB;
@@ -292,15 +291,15 @@ class evaluator {
      * Submit and finalize an oral evaluation on behalf of the student.
      * Each submission for a completed attempt creates a BRAND NEW attempt.
      *
-     * @param \stdClass $quiz
-     * @param \stdClass $cm
-     * @param \stdClass $course
-     * @param int $studentid
-     * @param array $marks [slot => mark]
-     * @param array $comments [slot => comment]
-     * @param string $generalfeedback
-     * @param int $existingattemptid
-     * @return \stdClass
+     * @param \stdClass $quiz The quiz record.
+     * @param \stdClass $cm The course module record.
+     * @param \stdClass $course The course record.
+     * @param int $studentid The student user ID.
+     * @param array $marks Array of marks indexed by slot.
+     * @param array $comments Array of comments indexed by slot.
+     * @param string $generalfeedback Overall examiner feedback notes.
+     * @param int $existingattemptid Optional existing attempt ID to update.
+     * @return \stdClass The finalized attempt record.
      */
     public static function submit_evaluation(
         $quiz,
@@ -424,7 +423,7 @@ class evaluator {
             ]);
             $event->trigger();
         } catch (\Exception $e) {
-            // Event failure should not break grading.
+            unset($e); // Intentionally ignore: event failure should not break grading.
         }
 
         return $attempt;
