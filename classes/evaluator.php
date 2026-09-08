@@ -66,7 +66,8 @@ class evaluator {
         $studentroleids = !empty($studentroles) ? array_keys($studentroles) : [];
 
         // 2. Get non-student staff role IDs to strictly exclude.
-        $staffroles = $DB->get_records_select('role', "shortname IN ('editingteacher', 'teacher', 'manager', 'coursecreator')", null, '', 'id');
+        $rolesql = "shortname IN ('editingteacher', 'teacher', 'manager', 'coursecreator')";
+        $staffroles = $DB->get_records_select('role', $rolesql, null, '', 'id');
         $staffroleids = !empty($staffroles) ? array_keys($staffroles) : [];
 
         $coursecontext = $context->get_course_context();
@@ -90,7 +91,8 @@ class evaluator {
             $sql2 = "SELECT DISTINCT ra.userid
                        FROM {role_assignments} ra
                       WHERE ra.contextid IN (:cctxid, :mctxid) AND ra.roleid $staffsql";
-            $staffusers = $DB->get_records_sql($sql2, array_merge(['cctxid' => $coursecontext->id, 'mctxid' => $context->id], $staffparams));
+            $ctxparams = ['cctxid' => $coursecontext->id, 'mctxid' => $context->id];
+            $staffusers = $DB->get_records_sql($sql2, array_merge($ctxparams, $staffparams));
             if (!empty($staffusers)) {
                 $staffuserids = array_keys($staffusers);
                 $alloweduserids = array_diff($alloweduserids, $staffuserids);
@@ -118,7 +120,8 @@ class evaluator {
 
         // 6. Fetch user profiles.
         list($uidsql, $uidparams) = $DB->get_in_or_equal($alloweduserids, SQL_PARAMS_NAMED, 'uid');
-        $users = $DB->get_records_select('user', "id $uidsql AND deleted = 0 AND suspended = 0", $uidparams, 'firstname ASC, lastname ASC');
+        $userwhere = "id $uidsql AND deleted = 0 AND suspended = 0";
+        $users = $DB->get_records_select('user', $userwhere, $uidparams, 'firstname ASC, lastname ASC');
 
         // 7. Attach quiz attempt / evaluation status for each candidate (batch fetched to avoid N+1 queries).
         $attemptsbyuser = [];
@@ -139,7 +142,9 @@ class evaluator {
         foreach ($users as $u) {
             $candatts = $attemptsbyuser[$u->id] ?? [];
             $lastatt = !empty($candatts) ? end($candatts) : null;
-            $status = ($lastatt && ($lastatt->state === 'finished' || $lastatt->state === \mod_quiz\quiz_attempt::FINISHED)) ? 'evaluated' : 'pending';
+            $isfinished = ($lastatt && ($lastatt->state === 'finished' ||
+                $lastatt->state === \mod_quiz\quiz_attempt::FINISHED));
+            $status = $isfinished ? 'evaluated' : 'pending';
 
             $candidates[$u->id] = (object)[
                 'user'          => $u,

@@ -83,7 +83,9 @@ class quiz_oralexam_report extends quiz_default_report {
 
 
         // Handle POST submission: Save evaluation.
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey() && $canevaluate && ($action === 'submit_eval' || optional_param('action', '', PARAM_ALPHANUMEXT) === 'submit_eval')) {
+        $ispost = data_submitted() && confirm_sesskey();
+        $issubmit = ($action === 'submit_eval' || optional_param('action', '', PARAM_ALPHANUMEXT) === 'submit_eval');
+        if ($ispost && $canevaluate && $issubmit) {
             $poststudentid = required_param('student', PARAM_INT);
             $postmarks = optional_param_array('marks', [], PARAM_FLOAT);
             $postfeedback = optional_param_array('feedback', [], PARAM_CLEANHTML);
@@ -149,9 +151,19 @@ class quiz_oralexam_report extends quiz_default_report {
         // 1. Stats Bar.
         echo html_writer::start_div('oralexam-stats-grid');
         $this->render_stat_card(get_string('totalstudents', 'quiz_oralexam'), $totalcandidates, 'stat-total', 'fa-users');
-        $this->render_stat_card(get_string('evaluatedstudents', 'quiz_oralexam'), $evaluatedcount, 'stat-evaluated', 'fa-check-circle');
+        $this->render_stat_card(
+            get_string('evaluatedstudents', 'quiz_oralexam'),
+            $evaluatedcount,
+            'stat-evaluated',
+            'fa-check-circle'
+        );
         $this->render_stat_card(get_string('pendingstudents', 'quiz_oralexam'), $pendingcount, 'stat-pending', 'fa-clock-o');
-        $this->render_stat_card(get_string('averagegrade', 'quiz_oralexam'), "$avgscore / $quizsumgrades", 'stat-avg', 'fa-graduation-cap');
+        $this->render_stat_card(
+            get_string('averagegrade', 'quiz_oralexam'),
+            "$avgscore / $quizsumgrades",
+            'stat-avg',
+            'fa-graduation-cap'
+        );
         echo html_writer::end_div(); // End stats grid.
 
         // 2. Filter Bar (Groups & Search & Results link).
@@ -181,7 +193,9 @@ class quiz_oralexam_report extends quiz_default_report {
         } else {
             // Live search input for students.
             echo '<div class="oralexam-search-box">';
-            echo '<input type="text" id="candidateSearch" placeholder="' . get_string('searchstudent', 'quiz_oralexam') . '" class="form-control" onkeyup="filterCandidates()">';
+            $searchph = get_string('searchstudent', 'quiz_oralexam');
+            echo '<input type="text" id="candidateSearch" placeholder="' . $searchph . '" ' .
+                'class="form-control" onkeyup="filterCandidates()">';
             echo '</div>';
 
                         echo html_writer::start_tag('ul', ['class' => 'oralexam-candidate-list', 'id' => 'candidateList']);
@@ -189,7 +203,9 @@ class quiz_oralexam_report extends quiz_default_report {
                 $u = $cand->user;
                 $activeclass = ($selectedstudent == $uid) ? ' active' : '';
                 $statusclass = $cand->status === 'evaluated' ? 'status-done' : 'status-wait';
-                $statuslabel = $cand->status === 'evaluated' ? get_string('status_evaluated', 'quiz_oralexam') : get_string('status_pending', 'quiz_oralexam');
+                $statuslabel = $cand->status === 'evaluated' ?
+                    get_string('status_evaluated', 'quiz_oralexam') :
+                    get_string('status_pending', 'quiz_oralexam');
                 $scorebadge = ($cand->grade !== null) ? round($cand->grade, 1) . ' pts' : '—';
 
                 $candurl = clone $baseurl;
@@ -223,7 +239,8 @@ class quiz_oralexam_report extends quiz_default_report {
                     echo html_writer::tag('span', $scorebadge, ['class' => 'cand-score-val']);
                     echo html_writer::end_div();
                 } else {
-                    echo html_writer::start_div('cand-status-pill status-wait status-icon-only', ['title' => $statuslabel, 'aria-label' => $statuslabel]);
+                    $waitattrs = ['title' => $statuslabel, 'aria-label' => $statuslabel];
+                    echo html_writer::start_div('cand-status-pill status-wait status-icon-only', $waitattrs);
                     echo '<i class="fa fa-clock-o"></i>';
                     echo html_writer::end_div();
                 }
@@ -249,9 +266,12 @@ class quiz_oralexam_report extends quiz_default_report {
                 // If student was selected from another group filter, load user details.
                 $selecteduser = $DB->get_record('user', ['id' => $selectedstudent]);
                 if ($selecteduser) {
-                    $candatts = $DB->get_records('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $selectedstudent], 'attempt ASC');
+                    $attparams = ['quiz' => $quiz->id, 'userid' => $selectedstudent];
+                    $candatts = $DB->get_records('quiz_attempts', $attparams, 'attempt ASC');
                     $lastatt = !empty($candatts) ? end($candatts) : null;
-                    $status = ($lastatt && ($lastatt->state === 'finished' || $lastatt->state === \mod_quiz\quiz_attempt::FINISHED)) ? 'evaluated' : 'pending';
+                    $isfinished = ($lastatt && ($lastatt->state === 'finished' ||
+                        $lastatt->state === \mod_quiz\quiz_attempt::FINISHED));
+                    $status = $isfinished ? 'evaluated' : 'pending';
                     $activecand = (object)[
                         'user'          => $selecteduser,
                         'status'        => $status,
@@ -379,7 +399,8 @@ class quiz_oralexam_report extends quiz_default_report {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'submit_eval']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'student', 'value' => $u->id]);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'group', 'value' => optional_param('group', 0, PARAM_INT)]);
+        $currgrp = optional_param('group', 0, PARAM_INT);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'group', 'value' => $currgrp]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'attemptid', 'value' => $targetattemptid]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'newattempt', 'value' => $isnewattempt]);
 
@@ -395,7 +416,8 @@ class quiz_oralexam_report extends quiz_default_report {
 
             // Question Header.
             echo html_writer::start_div('qcard-header');
-            echo html_writer::tag('span', get_string('questionno', 'quiz_oralexam', $q->slotindex), ['class' => 'qcard-slot-badge']);
+            $qnobadge = get_string('questionno', 'quiz_oralexam', $q->slotindex);
+            echo html_writer::tag('span', $qnobadge, ['class' => 'qcard-slot-badge']);
             echo html_writer::tag('span', get_string('maxmark', 'quiz_oralexam', $maxmark), ['class' => 'qcard-maxmark-badge']);
             echo html_writer::end_div();
 
@@ -420,7 +442,8 @@ class quiz_oralexam_report extends quiz_default_report {
 
             // Scoring Bar.
             echo html_writer::start_div('qcard-scoring-bar');
-            echo html_writer::tag('span', get_string('quickscore', 'quiz_oralexam'), ['class' => 'scoring-label font-weight-bold mr-2']);
+            $qsclabel = get_string('quickscore', 'quiz_oralexam');
+            echo html_writer::tag('span', $qsclabel, ['class' => 'scoring-label font-weight-bold mr-2']);
 
             // Quick Click Buttons (0%, 50%, 100%).
             $halfmark = round($maxmark / 2, 2);
