@@ -327,12 +327,15 @@ class evaluator {
             $quba = \question_engine::load_questions_usage_by_activity($attempt->uniqueid);
         }
 
-        // Apply grades for each slot.
+        // 1. In Moodle question engine, questions MUST be finished before manual_grade can be applied.
+        $quba->finish_all_questions($timenow);
+
+        // 2. Apply examiner marks and feedback for each slot.
         foreach ($slots as $slot) {
             $slotno = (int)$slot->slot;
             $maxmark = (float)$slot->maxmark;
 
-            $mark = isset($marks[$slotno]) ? (float)$marks[$slotno] : 0.0;
+            $mark = (isset($marks[$slotno]) && $marks[$slotno] !== '') ? (float)$marks[$slotno] : 0.0;
             if ($mark < 0) {
                 $mark = 0.0;
             }
@@ -345,8 +348,7 @@ class evaluator {
             $quba->manual_grade($slotno, $comment, $mark, FORMAT_HTML);
         }
 
-        // Finalize question usage.
-        $quba->finish_all_questions($timenow);
+        // 3. Save question usage state.
         \question_engine::save_questions_usage_by_activity($quba);
 
         // Finalize attempt record.

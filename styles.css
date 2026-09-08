@@ -97,7 +97,7 @@
     padding: 16px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    max-height: 820px;
+    max-height: 850px;
     display: flex;
     flex-direction: column;
 }
@@ -116,99 +116,185 @@
 }
 
 .oralexam-candidate-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    overflow-y: auto;
-    flex-grow: 1;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    flex-grow: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
 }
 
+/* Redesigned Sleek Candidate Item */
 .oralexam-candidate-item {
-    border-radius: 8px;
-    margin-bottom: 6px;
-    transition: background 0.15s ease;
-    border: 1px solid transparent;
-}
-
-.oralexam-candidate-item a {
-    display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    color: inherit;
-    text-decoration: none;
+    border-radius: 10px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+    padding: 0 !important;
 }
 
 .oralexam-candidate-item:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    border-color: #3b82f6 !important;
+    background: #f8fafc !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.12) !important;
 }
 
 .oralexam-candidate-item.active {
-    background: #eff6ff;
-    border-color: #3b82f6;
+    border-color: #2563eb !important;
+    background: #eff6ff !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
 }
 
-.cand-avatar {
-    margin-right: 12px;
+.oralexam-candidate-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #2563eb;
 }
 
-[dir="rtl"] .cand-avatar {
-    margin-right: 0;
-    margin-left: 12px;
+[dir="rtl"] .oralexam-candidate-item.active::before {
+    right: 0;
+}
+[dir="ltr"] .oralexam-candidate-item.active::before {
+    left: 0;
 }
 
-.cand-info {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+.oralexam-candidate-item a.candidate-link {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 8px 12px !important;
+    color: inherit !important;
+    text-decoration: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 10px !important;
+}
+
+/* Avatar Wrapper */
+.cand-avatar-wrap {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.cand-avatar-wrap .userpicture {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 1.5px solid #cbd5e1 !important;
+    margin: 0 !important;
+}
+
+/* Candidate Main Info */
+.cand-main-info {
+    flex-grow: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
 }
 
 .cand-name {
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: #0f172a;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.25 !important;
 }
 
-.cand-idnumber {
-    font-size: 0.78rem;
-    color: #64748b;
+.cand-idnumber-pill {
+    display: inline-block !important;
+    font-size: 0.74rem !important;
+    color: #64748b !important;
+    background: #f1f5f9 !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    margin-top: 2px !important;
+    width: fit-content !important;
+    letter-spacing: 0.3px !important;
 }
 
-.cand-badge {
+/* Candidate Meta Box */
+.cand-meta-box {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.cand-status-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
+.cand-status-pill.status-done {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.cand-status-pill.status-wait {
+    background: #fef3c7 !important;
+    color: #b45309 !important;
+    border: 1px solid #fde68a !important;
+}
+
+.cand-chevron {
+    color: #94a3b8 !important;
+    font-size: 0.95rem !important;
+    transition: transform 0.18s ease, color 0.18s ease !important;
+}
+
+.oralexam-candidate-item:hover .cand-chevron {
+    color: #2563eb !important;
+}
+
+[dir="rtl"] .oralexam-candidate-item:hover .cand-chevron {
+    transform: translateX(-3px) !important;
+}
+
+[dir="ltr"] .oralexam-candidate-item:hover .cand-chevron {
+    transform: translateX(3px) !important;
+}
+
+[dir="ltr"] .rtl-flip {
+    transform: scaleX(-1) !important;
+}
+
+/* Controls Bar */
+.oralexam-controls-card {
+    background: #ffffff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    font-size: 0.75rem;
-}
-
-[dir="rtl"] .cand-badge {
-    align-items: flex-start;
-}
-
-.cand-badge.status-done .cand-status-text {
-    color: #15803d;
-    font-weight: 600;
-}
-
-.cand-badge.status-done .cand-score-text {
-    background: #dcfce7;
-    color: #166534;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 700;
-}
-
-.cand-badge.status-wait .cand-status-text {
-    color: #b45309;
-    font-weight: 600;
-}
-
-.cand-badge.status-wait .cand-score-text {
-    color: #94a3b8;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 /* Right Content Area */

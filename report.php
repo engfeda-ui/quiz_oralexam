@@ -139,9 +139,19 @@ class quiz_oralexam_report extends quiz_default_report {
         $this->render_stat_card(get_string('averagegrade', 'quiz_oralexam'), "$avgscore / $quizsumgrades", 'stat-avg', 'fa-graduation-cap');
         echo html_writer::end_div(); // End stats grid.
 
-        // 2. Filter Bar (Groups & Search).
+        // 2. Filter Bar (Groups & Search & Results link).
         echo html_writer::start_div('oralexam-controls-card');
+        echo html_writer::start_div('controls-group-select');
         groups_print_activity_menu($cm, $baseurl);
+        echo html_writer::end_div();
+
+        echo html_writer::start_div('controls-actions');
+        echo html_writer::link(
+            new moodle_url('/mod/quiz/report.php', ['id' => $cm->id, 'mode' => 'overview']),
+            '<i class="fa fa-list-alt mr-1"></i> ' . get_string('viewquizresults', 'quiz_oralexam'),
+            ['class' => 'btn btn-outline-secondary btn-sm font-weight-bold', 'target' => '_blank']
+        );
+        echo html_writer::end_div();
         echo html_writer::end_div();
 
         // 3. Two-Column Layout: Left (Student Selector List), Right (Evaluation Sheet).
@@ -159,7 +169,7 @@ class quiz_oralexam_report extends quiz_default_report {
             echo '<input type="text" id="candidateSearch" placeholder="' . get_string('searchstudent', 'quiz_oralexam') . '" class="form-control" onkeyup="filterCandidates()">';
             echo '</div>';
 
-            echo html_writer::start_tag('ul', ['class' => 'oralexam-candidate-list', 'id' => 'candidateList']);
+                        echo html_writer::start_tag('ul', ['class' => 'oralexam-candidate-list', 'id' => 'candidateList']);
             foreach ($candidates as $uid => $cand) {
                 $u = $cand->user;
                 $activeclass = ($selectedstudent == $uid) ? ' active' : '';
@@ -170,23 +180,38 @@ class quiz_oralexam_report extends quiz_default_report {
                 $candurl = clone $baseurl;
                 $candurl->param('student', $uid);
 
-                echo html_writer::start_tag('li', ['class' => 'oralexam-candidate-item' . $activeclass, 'data-name' => strtolower(fullname($u) . ' ' . $u->idnumber)]);
-                echo html_writer::start_tag('a', ['href' => $candurl->out(false)]);
+                echo html_writer::start_tag('li', [
+                    'class' => 'oralexam-candidate-item' . $activeclass,
+                    'data-name' => strtolower(fullname($u) . ' ' . $u->idnumber),
+                    'onclick' => "window.location.href=" . json_encode($candurl->out(false)),
+                ]);
+                echo html_writer::start_tag('a', [
+                    'href' => $candurl->out(false),
+                    'class' => 'candidate-link',
+                ]);
 
-                echo html_writer::start_div('cand-avatar');
-                echo $OUTPUT->user_picture($u, ['size' => 42]);
+                echo html_writer::start_div('cand-avatar-wrap');
+                echo $OUTPUT->user_picture($u, ['size' => 36, 'link' => false]);
                 echo html_writer::end_div();
 
-                echo html_writer::start_div('cand-info');
+                echo html_writer::start_div('cand-main-info');
                 echo html_writer::tag('span', fullname($u), ['class' => 'cand-name']);
                 if (!empty($u->idnumber)) {
-                    echo html_writer::tag('span', $u->idnumber, ['class' => 'cand-idnumber']);
+                    echo html_writer::tag('span', $u->idnumber, ['class' => 'cand-idnumber-pill']);
                 }
                 echo html_writer::end_div();
 
-                echo html_writer::start_div('cand-badge ' . $statusclass);
-                echo html_writer::tag('span', $statuslabel, ['class' => 'cand-status-text']);
-                echo html_writer::tag('span', $scorebadge, ['class' => 'cand-score-text']);
+                echo html_writer::start_div('cand-meta-box');
+                echo html_writer::start_div('cand-status-pill ' . $statusclass);
+                if ($cand->status === 'evaluated') {
+                    echo '<i class="fa fa-check-circle mr-1"></i>';
+                    echo html_writer::tag('span', $scorebadge, ['class' => 'cand-score-val']);
+                } else {
+                    echo '<i class="fa fa-clock-o mr-1"></i>';
+                    echo html_writer::tag('span', $statuslabel, ['class' => 'cand-pending-val']);
+                }
+                echo html_writer::end_div();
+                echo '<i class="fa fa-angle-left cand-chevron rtl-flip"></i>';
                 echo html_writer::end_div();
 
                 echo html_writer::end_tag('a');
@@ -381,7 +406,8 @@ class quiz_oralexam_report extends quiz_default_report {
                 'class' => 'form-control mark-input text-center font-weight-bold',
                 'placeholder' => '0.0',
                 'oninput' => 'recalcTotal()',
-                'required' => 'required',
+                // Optional mark input
+                'required' => false,
             ]);
             echo html_writer::tag('span', "/ $maxmark", ['class' => 'mark-denom']);
             echo html_writer::end_div();
@@ -493,8 +519,10 @@ class quiz_oralexam_report extends quiz_default_report {
             var btn = document.getElementById('submitOralExamBtn');
             if (confirm(confirmMsg)) {
                 if (btn) {
-                    btn.disabled = true;
                     btn.innerText = <?php echo json_encode(get_string('submitting', 'quiz_oralexam')); ?>;
+                    setTimeout(function() {
+                        btn.disabled = true;
+                    }, 50);
                 }
                 return true;
             }

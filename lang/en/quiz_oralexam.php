@@ -70,3 +70,7 @@ $string['evaluationfailed'] = 'An error occurred while saving the evaluation. Pl
 $string['backtolist'] = 'Back to Students List';
 $string['confirmfinish'] = 'Are you sure you want to finalize this oral evaluation? The grade will be updated in the official Gradebook immediately.';
 $string['computedtotal'] = 'Live Total:';
+$string['viewquizresults'] = 'View Official Gradebook & Results Table';
+$string['cannotattemptoral'] = 'This is an oral / practical examination evaluated directly by the instructor/examiner. Students are not allowed to attempt or submit answers directly.';
+$string['oralexamnotice'] = 'Oral / Practical Examination';
+$string['oralexamnotice_desc'] = 'This assessment is conducted and evaluated directly by the examiner. Student self-attempts are disabled.';
