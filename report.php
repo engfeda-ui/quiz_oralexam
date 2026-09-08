@@ -83,7 +83,7 @@ class quiz_oralexam_report extends quiz_default_report {
 
 
         // Handle POST submission: Save evaluation.
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey() && $canevaluate && $action === 'submit_eval') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey() && $canevaluate && ($action === 'submit_eval' || optional_param('action', '', PARAM_ALPHANUMEXT) === 'submit_eval')) {
             $poststudentid = required_param('student', PARAM_INT);
             $postmarks = optional_param_array('marks', [], PARAM_FLOAT);
             $postfeedback = optional_param_array('feedback', [], PARAM_CLEANHTML);
@@ -369,10 +369,13 @@ class quiz_oralexam_report extends quiz_default_report {
 
         echo html_writer::start_tag('form', [
             'method' => 'POST',
-            'action' => $actionurl->out(),
+            'action' => $actionurl->out(false),
             'id'     => 'oralExamForm',
             'onsubmit' => 'return confirmSubmit()',
         ]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $cm->id]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'mode', 'value' => 'oralexam']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'submit_eval']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'student', 'value' => $u->id]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'group', 'value' => optional_param('group', 0, PARAM_INT)]);
