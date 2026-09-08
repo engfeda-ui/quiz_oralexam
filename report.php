@@ -289,8 +289,33 @@ class quiz_oralexam_report extends quiz_default_report {
     protected function render_evaluation_sheet($quiz, $cm, $course, $candidate, $baseurl, $canevaluate, $isnewattempt = 0) {
         global $OUTPUT, $USER;
 
+        global $DB;
         $u = $candidate->user;
-        $targetattemptid = $isnewattempt ? 0 : $candidate->attemptid;
+
+        // Fetch all attempts made by this student so far.
+        $allattempts = $DB->get_records('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $u->id], 'attempt ASC');
+        $attemptcount = count($allattempts);
+
+        // Check if there is an in-progress attempt.
+        $unfinishedattempt = null;
+        foreach ($allattempts as $att) {
+            if ($att->state !== \mod_quiz\quiz_attempt::FINISHED && $att->state !== 'finished') {
+                $unfinishedattempt = $att;
+                break;
+            }
+        }
+
+        $targetattemptid = 0;
+        $attemptlabel = '';
+        if ($unfinishedattempt) {
+            $targetattemptid = (int)$unfinishedattempt->id;
+            $attemptlabel = get_string('resumingattempt', 'quiz_oralexam', $unfinishedattempt->attempt);
+        } else {
+            // Every evaluation session is recorded as a BRAND NEW attempt!
+            $targetattemptid = 0;
+            $newnum = $attemptcount + 1;
+            $attemptlabel = get_string('recordingattempt', 'quiz_oralexam', $newnum);
+        }
 
         $questions = \quiz_oralexam\evaluator::get_quiz_questions(
             $quiz->id,
@@ -314,17 +339,24 @@ class quiz_oralexam_report extends quiz_default_report {
         echo html_writer::end_div();
         echo html_writer::end_div();
 
-        // Right side of header: Actions (Retake button if already evaluated).
-        echo html_writer::start_div('student-header-actions');
-        if ($candidate->status === 'evaluated' && $canevaluate) {
-            $retakeurl = clone $baseurl;
-            $retakeurl->params(['student' => $u->id, 'newattempt' => 1]);
-            echo html_writer::link($retakeurl, get_string('newattempt', 'quiz_oralexam'), [
-                'class' => 'btn btn-outline-primary btn-sm',
-            ]);
-        }
-        if ($isnewattempt) {
-            echo html_writer::tag('span', 'Creating New Attempt (Retake)', ['class' => 'badge badge-warning p-2']);
+        // Right side of header: Current Attempt badge and previous history.
+        echo html_writer::start_div('student-header-actions text-right');
+        echo html_writer::tag('span', '<i class="fa fa-pencil mr-1"></i> ' . $attemptlabel, [
+            'class' => 'badge badge-primary p-2 font-weight-bold shadow-sm',
+            'style' => 'font-size: 0.95rem;',
+        ]);
+        if (!empty($allattempts)) {
+            echo html_writer::start_div('mt-2 text-muted small');
+            echo html_writer::tag('strong', get_string('prevattempts', 'quiz_oralexam') . ' ');
+            $attlabels = [];
+            foreach ($allattempts as $a) {
+                if ($a->state === 'finished' || $a->state === \mod_quiz\quiz_attempt::FINISHED) {
+                    $sc = ($a->sumgrades !== null) ? round($a->sumgrades, 1) : 0;
+                    $attlabels[] = '#' . $a->attempt . ' (' . $sc . ' pts)';
+                }
+            }
+            echo implode(' | ', $attlabels);
+            echo html_writer::end_div();
         }
         echo html_writer::end_div();
         echo html_writer::end_div(); // End Header Bar.
@@ -530,18 +562,40 @@ class quiz_oralexam_report extends quiz_default_report {
         }
 
         function confirmSubmit() {
-            var confirmMsg = <?php echo json_encode(get_string('confirmfinish', 'quiz_oralexam')); ?>;
-            var btn = document.getElementById('submitOralExamBtn');
-            if (confirm(confirmMsg)) {
-                if (btn) {
-                    btn.innerText = <?php echo json_encode(get_string('submitting', 'quiz_oralexam')); ?>;
-                    setTimeout(function() {
-                        btn.disabled = true;
-                    }, 50);
+            var inputs = document.querySelectorAll('.mark-input');
+            var emptyCount = 0;
+            inputs.forEach(function(inp) {
+                var v = inp.value.trim();
+                if (v === '' || isNaN(parseFloat(v))) {
+                    emptyCount++;
                 }
-                return true;
+            });
+
+            var confirmMsg = '';
+            if (emptyCount > 0) {
+                confirmMsg = "⚠️ تنبيه: يوجد " + emptyCount + " سؤال لم يتم رصد درجات لها.\nسيتم احتساب الأسئلة المتروكة تلقائياً بدرجة (صفر).\n\nهل تريد المتابعة وحفظ واعتماد التقييم؟";
+            } else {
+                confirmMsg = <?php echo json_encode(get_string('confirmfinish', 'quiz_oralexam')); ?>;
             }
-            return false;
+
+            if (!confirm(confirmMsg)) {
+                return false;
+            }
+
+            // Fill all empty mark inputs with 0 before submission so they are recorded as zero
+            inputs.forEach(function(inp) {
+                var v = inp.value.trim();
+                if (v === '' || isNaN(parseFloat(v))) {
+                    inp.value = "0";
+                }
+            });
+
+            var btn = document.getElementById('submitOralExamBtn');
+            if (btn) {
+                btn.innerText = <?php echo json_encode(get_string('submitting', 'quiz_oralexam')); ?>;
+                // Allow form submit without synchronously disabling the button
+            }
+            return true;
         }
 
         // Initialize live total on load.

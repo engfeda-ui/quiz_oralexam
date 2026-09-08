@@ -3,7 +3,7 @@
 [![Moodle Compatibility](https://img.shields.io/badge/Moodle-4.0%20to%205.0%2B-orange.svg?style=flat-square)](https://moodle.org)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.0.0-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.1.3-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE / Technical Workshops)**. It allows examiners and instructors to directly assess students question-by-question live on behalf of the student without student submission, linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -42,6 +42,13 @@ Then visit **Site administration > Notifications** to complete the installation.
 ---
 
 ## 📋 Changelog
+
+### v1.1.3 (2026-09-08)
+- **Automatic Multi-Attempt Incrementing:** Each evaluation recorded for a student with completed attempts now creates a brand new attempt (#1, #2, #3, ...) in `quiz_attempts` and updates Moodle Gradebook results.
+- **Attempt History Display:** Added visual indicator showing previous attempt scores and current attempt number being recorded (`تسجيل محاولة جديدة رقم #X`).
+- **Unrated Question Warning & Auto-Zero:** Interactive confirmation warning alert when questions are left unrated, automatically filling them with zero (0.0) upon confirmation.
+- **Fixed PHP Parse Error:** Resolved character 0x07 syntax error in `evaluator.php` event trigger.
+- **Bilingual i18n Strings:** Added Arabic and English translation keys for new attempt indicators.
 
 ### v1.0.0 (2026-09-07)
 - Initial production release.

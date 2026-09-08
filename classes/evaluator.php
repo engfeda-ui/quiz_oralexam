@@ -15,10 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Evaluator helper class for quiz_oralexam.
- *
- * Handles candidate fetching (students only), question & competency resolution,
- * programmatic attempt creation, and question-by-question scoring.
+ * Oral Exam Evaluator Core Engine.
  *
  * @package    quiz_oralexam
  * @copyright  2026 Mahmoud Salem
@@ -29,114 +26,115 @@ namespace quiz_oralexam;
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
-require_once($CFG->dirroot . '/question/engine/lib.php');
+require_once($CFG->libdir . '/gradelib.php');
+require_once($CFG->libdir . '/questionlib.php');
 
+/**
+ * Class evaluator
+ *
+ * Manages question loading, competency mapping, candidate listing, and attempt submission.
+ */
 class evaluator {
 
     /**
-     * Get the quiz settings object compatible across Moodle versions.
+     * Get or create a quiz object for an oral examination session.
      *
      * @param int $quizid
      * @param int $userid
-     * @return object
+     * @return \mod_quiz\quiz_settings
      */
-    public static function get_quiz_object(int $quizid, int $userid = 0) {
-        if (class_exists('\\mod_quiz\\quiz_settings')) {
-            return \mod_quiz\quiz_settings::create($quizid, $userid);
-        }
-        return \quiz_settings::create($quizid, $userid);
+    public static function get_quiz_object(int $quizid, int $userid = 0): \mod_quiz\quiz_settings {
+        return \mod_quiz\quiz_settings::create($quizid, $userid);
     }
 
     /**
-     * Fetch enrolled student candidates for this quiz with their current oral evaluation status.
-     * Strictly filters to users with student role (excluding teachers, trainers, and managers).
+     * Get list of candidates (students enrolled in course) for evaluation.
+     * Strictly filters out users who have teacher/editingteacher/manager roles.
      *
      * @param int $courseid
      * @param \context_module $context
      * @param int $quizid
-     * @param int $groupid
-     * @return array
+     * @param int $groupid (0 for all)
+     * @return array of candidate objects
      */
     public static function get_candidates(int $courseid, \context_module $context, int $quizid, int $groupid = 0): array {
         global $DB;
 
-        $coursecontext = \context_course::instance($courseid);
-        $studentrole = $DB->get_record('role', ['shortname' => 'student']);
+        // 1. Get student role IDs.
+        $studentroles = $DB->get_records_select('role', "shortname = 'student'", null, '', 'id');
+        $studentroleids = !empty($studentroles) ? array_keys($studentroles) : [];
 
-        $userfields = 'u.id, u.firstname, u.lastname, u.idnumber, u.department, u.institution, u.email, u.picture, u.imagealt';
+        // 2. Get non-student staff role IDs to strictly exclude.
+        $staffroles = $DB->get_records_select('role', "shortname IN ('editingteacher', 'teacher', 'manager', 'coursecreator')", null, '', 'id');
+        $staffroleids = !empty($staffroles) ? array_keys($staffroles) : [];
 
-        if ($studentrole) {
-            $users = get_role_users(
-                $studentrole->id,
-                $coursecontext,
-                false,
-                $userfields,
-                'u.lastname ASC, u.firstname ASC',
-                false,
-                $groupid
-            );
+        $coursecontext = $context->get_course_context();
+
+        // 3. Find all users assigned the student role in this course context.
+        if (!empty($studentroleids)) {
+            list($rolesql, $roleparams) = $DB->get_in_or_equal($studentroleids, SQL_PARAMS_NAMED, 'srole');
+            $sql = "SELECT DISTINCT ra.userid
+                      FROM {role_assignments} ra
+                     WHERE ra.contextid = :ctxid AND ra.roleid $rolesql";
+            $studentusers = $DB->get_records_sql($sql, array_merge(['ctxid' => $coursecontext->id], $roleparams));
+            $alloweduserids = !empty($studentusers) ? array_keys($studentusers) : [];
         } else {
-            $allusers = get_enrolled_users(
-                $context,
-                'mod/quiz:attempt',
-                $groupid,
-                $userfields,
-                'u.lastname ASC, u.firstname ASC'
-            );
-            $users = [];
-            foreach ($allusers as $u) {
-                // Exclude teachers/graders.
-                if (!has_capability('mod/quiz:grade', $context, $u)) {
-                    $users[$u->id] = $u;
-                }
+            $enrolled = get_enrolled_users($context, 'mod/quiz:attempt', $groupid, 'u.id');
+            $alloweduserids = !empty($enrolled) ? array_keys($enrolled) : [];
+        }
+
+        // 4. Exclude any users who have staff/teacher roles in this context or course.
+        if (!empty($staffroleids)) {
+            list($staffsql, $staffparams) = $DB->get_in_or_equal($staffroleids, SQL_PARAMS_NAMED, 'staffrole');
+            $sql2 = "SELECT DISTINCT ra.userid
+                       FROM {role_assignments} ra
+                      WHERE ra.contextid IN (:cctxid, :mctxid) AND ra.roleid $staffsql";
+            $staffusers = $DB->get_records_sql($sql2, array_merge(['cctxid' => $coursecontext->id, 'mctxid' => $context->id], $staffparams));
+            if (!empty($staffusers)) {
+                $staffuserids = array_keys($staffusers);
+                $alloweduserids = array_diff($alloweduserids, $staffuserids);
             }
         }
 
-        if (empty($users)) {
+        // Also exclude site admins.
+        $siteadmins = explode(',', get_config('core', 'siteadmins'));
+        $alloweduserids = array_diff($alloweduserids, $siteadmins);
+
+        if (empty($alloweduserids)) {
             return [];
         }
 
-        // Preload all attempts for this quiz to avoid N+1 queries.
-        $attempts = $DB->get_records('quiz_attempts', ['quiz' => $quizid], 'attempt ASC');
-        $userattempts = [];
-        foreach ($attempts as $att) {
-            $userattempts[$att->userid][] = $att;
+        // 5. Apply group filter if selected.
+        if ($groupid > 0) {
+            $groupmembers = groups_get_members($groupid, 'u.id');
+            $groupuserids = !empty($groupmembers) ? array_keys($groupmembers) : [];
+            $alloweduserids = array_intersect($alloweduserids, $groupuserids);
         }
 
+        if (empty($alloweduserids)) {
+            return [];
+        }
+
+        // 6. Fetch user profiles.
+        list($uidsql, $uidparams) = $DB->get_in_or_equal($alloweduserids, SQL_PARAMS_NAMED, 'uid');
+        $users = $DB->get_records_select('user', "id $uidsql AND deleted = 0 AND suspended = 0", $uidparams, 'firstname ASC, lastname ASC');
+
+        // 7. Attach quiz attempt / evaluation status for each candidate.
         $candidates = [];
         foreach ($users as $u) {
-            $useratts = $userattempts[$u->id] ?? [];
-            $lastatt = !empty($useratts) ? end($useratts) : null;
-
-            $status = 'pending';
-            $grade = null;
-            $attemptid = 0;
-            $attemptnumber = 0;
-            $timefinish = 0;
-
-            if ($lastatt) {
-                $attemptid = (int)$lastatt->id;
-                $attemptnumber = (int)$lastatt->attempt;
-                $timefinish = (int)$lastatt->timefinish;
-
-                if ($lastatt->state === \mod_quiz\quiz_attempt::FINISHED || $lastatt->state === 'finished') {
-                    $status = 'evaluated';
-                    $grade = (float)$lastatt->sumgrades;
-                } else if ($lastatt->state === \mod_quiz\quiz_attempt::IN_PROGRESS || $lastatt->state === 'inprogress') {
-                    $status = 'inprogress';
-                }
-            }
+            $candatts = $DB->get_records('quiz_attempts', ['quiz' => $quizid, 'userid' => $u->id], 'attempt ASC');
+            $lastatt = !empty($candatts) ? end($candatts) : null;
+            $status = ($lastatt && ($lastatt->state === 'finished' || $lastatt->state === \mod_quiz\quiz_attempt::FINISHED)) ? 'evaluated' : 'pending';
 
             $candidates[$u->id] = (object)[
                 'user'          => $u,
                 'status'        => $status,
-                'attemptid'     => $attemptid,
-                'attemptnumber' => $attemptnumber,
-                'grade'         => $grade,
-                'timefinish'    => $timefinish,
-                'attemptcount'  => count($useratts),
+                'attemptid'     => $lastatt ? (int)$lastatt->id : 0,
+                'attemptnumber' => $lastatt ? (int)$lastatt->attempt : 0,
+                'grade'         => $lastatt ? (float)$lastatt->sumgrades : null,
+                'timefinish'    => $lastatt ? (int)$lastatt->timefinish : 0,
+                'attemptcount'  => count($candatts),
             ];
         }
 
@@ -144,7 +142,7 @@ class evaluator {
     }
 
     /**
-     * Fetch questions in the quiz with their linked competencies and current marks.
+     * Load questions for this quiz and attach competencies from qbank_comp_ext_qmap.
      *
      * @param int $quizid
      * @param int $courseid
@@ -161,20 +159,7 @@ class evaluator {
 
         $quba = null;
         if ($attemptid > 0) {
-                    // Auto-lock and register this quiz as an Oral Exam in quizaccess_oralexam.
-        if ($DB->get_manager()->table_exists('quizaccess_oralexam')) {
-            $existingrule = $DB->get_record('quizaccess_oralexam', ['quizid' => $quiz->id]);
-            if (!$existingrule) {
-                $DB->insert_record('quizaccess_oralexam', (object)[
-                    'quizid'          => $quiz->id,
-                    'oralexamenabled' => 1,
-                ]);
-            } else if (empty($existingrule->oralexamenabled)) {
-                $DB->set_field('quizaccess_oralexam', 'oralexamenabled', 1, ['quizid' => $quiz->id]);
-            }
-        }
-
-        $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid, 'quiz' => $quizid]);
+            $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid, 'quiz' => $quizid]);
             if ($attempt && $attempt->uniqueid) {
                 try {
                     $quba = \question_engine::load_questions_usage_by_activity($attempt->uniqueid);
@@ -294,6 +279,7 @@ class evaluator {
 
     /**
      * Submit and finalize an oral evaluation on behalf of the student.
+     * Each submission for a completed attempt creates a BRAND NEW attempt.
      *
      * @param \stdClass $quiz
      * @param \stdClass $cm
@@ -322,9 +308,7 @@ class evaluator {
         $slots = $structure->get_slots();
         $timenow = time();
 
-        if ($existingattemptid > 0) {
-            // Update existing attempt.
-                    // Auto-lock and register this quiz as an Oral Exam in quizaccess_oralexam.
+        // Auto-lock and register this quiz as an Oral Exam in quizaccess_oralexam.
         if ($DB->get_manager()->table_exists('quizaccess_oralexam')) {
             $existingrule = $DB->get_record('quizaccess_oralexam', ['quizid' => $quiz->id]);
             if (!$existingrule) {
@@ -337,14 +321,23 @@ class evaluator {
             }
         }
 
-        $attempt = $DB->get_record('quiz_attempts', [
+        // Determine if we should reuse an in-progress attempt or start a brand new attempt.
+        $attempt = null;
+        if ($existingattemptid > 0) {
+            $existing = $DB->get_record('quiz_attempts', [
                 'id'     => $existingattemptid,
                 'quiz'   => $quiz->id,
                 'userid' => $studentid,
-            ], '*', MUST_EXIST);
+            ]);
+            // Only reuse if the existing attempt is STILL IN PROGRESS!
+            // If the attempt was already FINISHED, create a BRAND NEW attempt!
+            if ($existing && $existing->state !== \mod_quiz\quiz_attempt::FINISHED && $existing->state !== 'finished') {
+                $attempt = $existing;
+                $quba = \question_engine::load_questions_usage_by_activity($attempt->uniqueid);
+            }
+        }
 
-            $quba = \question_engine::load_questions_usage_by_activity($attempt->uniqueid);
-        } else {
+        if (!$attempt) {
             // Create a brand new attempt on behalf of the student.
             $attempts = quiz_get_user_attempts($quiz->id, $studentid, 'all');
             $attemptnumber = count($attempts) + 1;
@@ -390,14 +383,14 @@ class evaluator {
         // 3. Save question usage state.
         \question_engine::save_questions_usage_by_activity($quba);
 
-        // Finalize attempt record.
+        // 4. Finalize attempt record.
         $attempt->state        = \mod_quiz\quiz_attempt::FINISHED;
         $attempt->timefinish   = $timenow;
         $attempt->timemodified = $timenow;
         $attempt->sumgrades    = $quba->get_total_mark();
         $DB->update_record('quiz_attempts', $attempt);
 
-        // Update Moodle Gradebook and save best grade.
+        // 5. Update Moodle Gradebook and save best grade.
         quiz_save_best_grade($quizobj->get_quiz(), $studentid);
 
         // Trigger attempt_submitted event.

@@ -74,3 +74,6 @@ $string['viewquizresults'] = 'View Official Gradebook & Results Table';
 $string['cannotattemptoral'] = 'This is an oral / practical examination evaluated directly by the instructor/examiner. Students are not allowed to attempt or submit answers directly.';
 $string['oralexamnotice'] = 'Oral / Practical Examination';
 $string['oralexamnotice_desc'] = 'This assessment is conducted and evaluated directly by the examiner. Student self-attempts are disabled.';
+$string['recordingattempt'] = 'Recording Attempt #{$a}';
+$string['resumingattempt'] = 'Resuming In-Progress Attempt #{$a}';
+$string['prevattempts'] = 'Previous Attempts:';
