@@ -161,7 +161,20 @@ class evaluator {
 
         $quba = null;
         if ($attemptid > 0) {
-            $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid, 'quiz' => $quizid]);
+                    // Auto-lock and register this quiz as an Oral Exam in quizaccess_oralexam.
+        if ($DB->get_manager()->table_exists('quizaccess_oralexam')) {
+            $existingrule = $DB->get_record('quizaccess_oralexam', ['quizid' => $quiz->id]);
+            if (!$existingrule) {
+                $DB->insert_record('quizaccess_oralexam', (object)[
+                    'quizid'          => $quiz->id,
+                    'oralexamenabled' => 1,
+                ]);
+            } else if (empty($existingrule->oralexamenabled)) {
+                $DB->set_field('quizaccess_oralexam', 'oralexamenabled', 1, ['quizid' => $quiz->id]);
+            }
+        }
+
+        $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid, 'quiz' => $quizid]);
             if ($attempt && $attempt->uniqueid) {
                 try {
                     $quba = \question_engine::load_questions_usage_by_activity($attempt->uniqueid);
@@ -311,7 +324,20 @@ class evaluator {
 
         if ($existingattemptid > 0) {
             // Update existing attempt.
-            $attempt = $DB->get_record('quiz_attempts', [
+                    // Auto-lock and register this quiz as an Oral Exam in quizaccess_oralexam.
+        if ($DB->get_manager()->table_exists('quizaccess_oralexam')) {
+            $existingrule = $DB->get_record('quizaccess_oralexam', ['quizid' => $quiz->id]);
+            if (!$existingrule) {
+                $DB->insert_record('quizaccess_oralexam', (object)[
+                    'quizid'          => $quiz->id,
+                    'oralexamenabled' => 1,
+                ]);
+            } else if (empty($existingrule->oralexamenabled)) {
+                $DB->set_field('quizaccess_oralexam', 'oralexamenabled', 1, ['quizid' => $quiz->id]);
+            }
+        }
+
+        $attempt = $DB->get_record('quiz_attempts', [
                 'id'     => $existingattemptid,
                 'quiz'   => $quiz->id,
                 'userid' => $studentid,
