@@ -116,7 +116,7 @@ class quiz_oralexam_report extends quiz_default_report {
                 $redirecturl = clone $baseurl;
                 $redirecturl->param('student', $poststudentid);
                 redirect($redirecturl);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \core\notification::error(get_string('evaluationfailed', 'quiz_oralexam') . ' ' . $e->getMessage());
             }
         }

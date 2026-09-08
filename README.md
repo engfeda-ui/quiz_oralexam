@@ -3,7 +3,7 @@
 [![Moodle Compatibility](https://img.shields.io/badge/Moodle-4.0%20to%205.0%2B-orange.svg?style=flat-square)](https://moodle.org)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.1.5-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.1.6-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE / Technical Workshops)**. It allows examiners and instructors to directly assess students question-by-question live on behalf of the student without student submission, linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -42,6 +42,10 @@ Then visit **Site administration > Notifications** to complete the installation.
 ---
 
 ## 📋 Changelog
+
+### v1.1.6 (2026-09-08)
+- **Fixed PHP Type Hint Mismatch (`cm_info` vs `stdClass`):** Removed rigid `\stdClass` type hint on `$cm`, `$quiz`, and `$course` in `evaluator::submit_evaluation()`. In Moodle 4.x/5.x, `$cm` is an instance of `\cm_info`, which caused a PHP `TypeError` during evaluation submission.
+- **Upgraded Exception Handling:** Changed `catch (\Exception $e)` to `catch (\Throwable $e)` in `report.php` to safely capture any potential runtime errors or type errors and display user-friendly notifications.
 
 ### v1.1.5 (2026-09-08)
 - **Fixed Form POST Routing & Redirect Loop:** Added missing hidden fields (`id`, `mode`, `action`) to the oral exam evaluation form and disabled HTML entity escaping on the form action URL (`$actionurl->out(false)`). This prevents Moodle core `mod/quiz/report.php` from missing the `$mode` parameter and dropping POST submissions into an overview redirect.

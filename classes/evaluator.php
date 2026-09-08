@@ -298,15 +298,15 @@ class evaluator {
      * @return \stdClass
      */
     public static function submit_evaluation(
-        \stdClass $quiz,
-        \stdClass $cm,
-        \stdClass $course,
+        $quiz,
+        $cm,
+        $course,
         int $studentid,
         array $marks,
         array $comments,
         string $generalfeedback = '',
         int $existingattemptid = 0
-    ): \stdClass {
+    ) {
         global $DB, $USER;
 
         // Verify student is actively enrolled in course context.
