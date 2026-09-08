@@ -82,7 +82,7 @@
 /* Main Two-Column Grid */
 .oralexam-main-grid {
     display: grid;
-    grid-template-columns: 340px 1fr;
+    grid-template-columns: 365px 1fr;
     gap: 24px;
 }
 
@@ -265,6 +265,16 @@
     background: #fef3c7 !important;
     color: #b45309 !important;
     border: 1px solid #fde68a !important;
+}
+
+.cand-status-pill.status-icon-only {
+    padding: 6px !important;
+    border-radius: 50% !important;
+    width: 24px !important;
+    height: 24px !important;
+    justify-content: center !important;
+    font-size: 0.82rem !important;
+    box-sizing: border-box !important;
 }
 
 .cand-chevron {

@@ -3,7 +3,7 @@
 [![Moodle Compatibility](https://img.shields.io/badge/Moodle-4.0%20to%205.0%2B-orange.svg?style=flat-square)](https://moodle.org)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.1.7-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.1.8-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE / Technical Workshops)**. It allows examiners and instructors to directly assess students question-by-question live on behalf of the student without student submission, linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -42,6 +42,9 @@ Then visit **Site administration > Notifications** to complete the installation.
 ---
 
 ## 📋 Changelog
+
+### v1.1.8 (2026-09-08)
+- **Enhanced Candidate Card Typography & Compact Status Badges:** Replaced the wide text-heavy `Pending Evaluation` label with a sleek, circular pending clock icon badge (??) with native tooltip hover. Expanded the left sidebar width to `365px` to provide ample breathing room for full student names and academic ID pills without text truncations, while retaining the score badge (`30 pts`) for evaluated candidates.
 
 ### v1.1.7 (2026-09-08)
 - **Fixed Candidate List Collapsing / Shrinking in All Participants View:** Fixed CSS flexbox layout issue where `.oralexam-candidate-item` lacked `flex-shrink: 0` and `min-height: 52px`, causing all 40 student cards in the "All participants" sidebar to squish into 18px empty bars when squeezed inside the flex container. Added explicit scroll boundaries (`max-height: 720px`, `min-height: 0`, `flex: 1 1 auto`) to ensure smooth scrolling and complete visibility of student names, IDs, and evaluation status badges.

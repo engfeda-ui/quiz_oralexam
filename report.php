@@ -217,15 +217,16 @@ class quiz_oralexam_report extends quiz_default_report {
                 echo html_writer::end_div();
 
                 echo html_writer::start_div('cand-meta-box');
-                echo html_writer::start_div('cand-status-pill ' . $statusclass);
                 if ($cand->status === 'evaluated') {
+                    echo html_writer::start_div('cand-status-pill status-done', ['title' => $statuslabel . ': ' . $scorebadge]);
                     echo '<i class="fa fa-check-circle mr-1"></i>';
                     echo html_writer::tag('span', $scorebadge, ['class' => 'cand-score-val']);
+                    echo html_writer::end_div();
                 } else {
-                    echo '<i class="fa fa-clock-o mr-1"></i>';
-                    echo html_writer::tag('span', $statuslabel, ['class' => 'cand-pending-val']);
+                    echo html_writer::start_div('cand-status-pill status-wait status-icon-only', ['title' => $statuslabel, 'aria-label' => $statuslabel]);
+                    echo '<i class="fa fa-clock-o"></i>';
+                    echo html_writer::end_div();
                 }
-                echo html_writer::end_div();
                 echo '<i class="fa fa-angle-left cand-chevron rtl-flip"></i>';
                 echo html_writer::end_div();
 
