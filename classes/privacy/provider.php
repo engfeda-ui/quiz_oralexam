@@ -28,11 +28,17 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Privacy provider implementation for quiz_oralexam.
+ *
+ * This plugin is an evaluation and grading interface for mod_quiz. It records all attempts,
+ * student grades, question responses, and feedback directly into core Moodle tables
+ * ({quiz_attempts}, {quiz_grades}, {question_attempts}, and {question_attempt_steps}).
+ * All such personal data is managed, exported, and deleted by mod_quiz and core_question privacy providers.
+ * This plugin does not maintain any separate personal user data tables of its own.
  */
 class provider implements \core_privacy\local\metadata\null_provider {
 
     /**
-     * Get the reason why this plugin does not store personal data.
+     * Get the reason why this plugin does not store personal data on its own.
      *
      * @return string
      */

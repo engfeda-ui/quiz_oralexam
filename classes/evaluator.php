@@ -120,10 +120,24 @@ class evaluator {
         list($uidsql, $uidparams) = $DB->get_in_or_equal($alloweduserids, SQL_PARAMS_NAMED, 'uid');
         $users = $DB->get_records_select('user', "id $uidsql AND deleted = 0 AND suspended = 0", $uidparams, 'firstname ASC, lastname ASC');
 
-        // 7. Attach quiz attempt / evaluation status for each candidate.
+        // 7. Attach quiz attempt / evaluation status for each candidate (batch fetched to avoid N+1 queries).
+        $attemptsbyuser = [];
+        if (!empty($users)) {
+            list($attusersql, $attparams) = $DB->get_in_or_equal(array_keys($users), SQL_PARAMS_NAMED, 'attuser');
+            $allattempts = $DB->get_records_select(
+                'quiz_attempts',
+                "quiz = :quizid AND userid $attusersql",
+                array_merge(['quizid' => $quizid], $attparams),
+                'attempt ASC'
+            );
+            foreach ($allattempts as $att) {
+                $attemptsbyuser[$att->userid][] = $att;
+            }
+        }
+
         $candidates = [];
         foreach ($users as $u) {
-            $candatts = $DB->get_records('quiz_attempts', ['quiz' => $quizid, 'userid' => $u->id], 'attempt ASC');
+            $candatts = $attemptsbyuser[$u->id] ?? [];
             $lastatt = !empty($candatts) ? end($candatts) : null;
             $status = ($lastatt && ($lastatt->state === 'finished' || $lastatt->state === \mod_quiz\quiz_attempt::FINISHED)) ? 'evaluated' : 'pending';
 
@@ -236,24 +250,16 @@ class evaluator {
     public static function get_question_competencies(int $questionid, int $courseid): array {
         global $DB;
 
-        // 1. Direct mapping in qbank_comp_ext_qmap with course filter.
-        $sql = "SELECT c.id, c.idnumber, c.shortname, c.description
+        // 1. Direct mapping in qbank_comp_ext_qmap (prioritizing matching courseid).
+        $sql = "SELECT c.id, c.idnumber, c.shortname, c.description,
+                       (CASE WHEN m.courseid = :cid THEN 1 ELSE 0 END) AS matchcourse
                   FROM {qbank_comp_ext_qmap} m
                   JOIN {competency} c ON c.id = m.competencyid
-                 WHERE m.questionid = :qid AND m.courseid = :cid";
+                 WHERE m.questionid = :qid
+              ORDER BY matchcourse DESC";
         $records = $DB->get_records_sql($sql, ['qid' => $questionid, 'cid' => $courseid]);
         if (!empty($records)) {
             return array_values($records);
-        }
-
-        // 2. Direct mapping without course filter.
-        $sql2 = "SELECT c.id, c.idnumber, c.shortname, c.description
-                   FROM {qbank_comp_ext_qmap} m
-                   JOIN {competency} c ON c.id = m.competencyid
-                  WHERE m.questionid = :qid";
-        $records2 = $DB->get_records_sql($sql2, ['qid' => $questionid]);
-        if (!empty($records2)) {
-            return array_values($records2);
         }
 
         // 3. Fallback to question tags (e.g. comp-101, comp-safety).
@@ -302,6 +308,12 @@ class evaluator {
         int $existingattemptid = 0
     ): \stdClass {
         global $DB, $USER;
+
+        // Verify student is actively enrolled in course context.
+        $coursecontext = \context_course::instance($course->id);
+        if (!is_enrolled($coursecontext, $studentid)) {
+            throw new \moodle_exception('studentnotenrolled', 'quiz_oralexam');
+        }
 
         $quizobj = self::get_quiz_object($quiz->id, $studentid);
         $structure = $quizobj->get_structure();

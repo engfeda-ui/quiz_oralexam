@@ -52,7 +52,7 @@ class quiz_oralexam_report extends quiz_default_report {
         $selectedgroup = $currentgroup;
 
         $selectedstudent = optional_param('student', 0, PARAM_INT);
-        $action = optional_param('action', '', PARAM_ALPHA);
+        $action = optional_param('action', '', PARAM_ALPHANUMEXT);
         $attemptid = optional_param('attemptid', 0, PARAM_INT);
         $isnewattempt = optional_param('newattempt', 0, PARAM_INT);
 
@@ -86,11 +86,12 @@ class quiz_oralexam_report extends quiz_default_report {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey() && $canevaluate && $action === 'submit_eval') {
             $poststudentid = required_param('student', PARAM_INT);
             $postmarks = optional_param_array('marks', [], PARAM_FLOAT);
-            $postfeedback = optional_param_array('feedback', [], PARAM_RAW);
-            $generalnotes = optional_param('generalfeedback', '', PARAM_RAW);
+            $postfeedback = optional_param_array('feedback', [], PARAM_CLEANHTML);
+            $generalnotes = optional_param('generalfeedback', '', PARAM_CLEANHTML);
             $targetattemptid = optional_param('attemptid', 0, PARAM_INT);
+            $postnewattempt = optional_param('newattempt', 0, PARAM_INT);
 
-            if ($isnewattempt) {
+            if ($postnewattempt || $isnewattempt) {
                 $targetattemptid = 0; // Force brand new attempt.
             }
 
@@ -196,7 +197,7 @@ class quiz_oralexam_report extends quiz_default_report {
 
                 echo html_writer::start_tag('li', [
                     'class' => 'oralexam-candidate-item' . $activeclass,
-                    'data-name' => strtolower(fullname($u) . ' ' . $u->idnumber),
+                    'data-name' => \core_text::strtolower(fullname($u) . ' ' . ($u->idnumber ?? '')),
                     'onclick' => "window.location.href=" . json_encode($candurl->out(false)),
                 ]);
                 echo html_writer::start_tag('a', [
@@ -269,7 +270,7 @@ class quiz_oralexam_report extends quiz_default_report {
             echo html_writer::start_div('oralexam-empty-state');
             echo html_writer::tag('i', '', ['class' => 'fa fa-user-circle-o fa-5x text-muted']);
             echo html_writer::tag('h3', get_string('selectstudent', 'quiz_oralexam'));
-            echo html_writer::tag('p', 'اضغط على أي طالب من القائمة الجانبية لبدء استمارة التقييم الشفهي ورصد الدرجات.', ['class' => 'text-muted']);
+            echo html_writer::tag('p', get_string('clickstudentprompt', 'quiz_oralexam'), ['class' => 'text-muted']);
             echo html_writer::end_div();
         }
 
@@ -287,9 +288,7 @@ class quiz_oralexam_report extends quiz_default_report {
      * Render evaluation questions sheet for a student.
      */
     protected function render_evaluation_sheet($quiz, $cm, $course, $candidate, $baseurl, $canevaluate, $isnewattempt = 0) {
-        global $OUTPUT, $USER;
-
-        global $DB;
+        global $OUTPUT, $USER, $DB;
         $u = $candidate->user;
 
         // Fetch all attempts made by this student so far.
@@ -407,7 +406,7 @@ class quiz_oralexam_report extends quiz_default_report {
                     $comptitle = s($comp->shortname ?: $comp->idnumber);
                     echo html_writer::start_span('comp-pill', ['title' => s($comp->description)]);
                     echo html_writer::tag('i', '', ['class' => 'fa fa-tags mr-1']);
-                    echo html_writer::tag('span', $comp->idnumber . ' - ' . $comptitle, ['class' => 'comp-pill-text']);
+                    echo html_writer::tag('span', s($comp->idnumber) . ' - ' . $comptitle, ['class' => 'comp-pill-text']);
                     echo html_writer::end_span();
                 }
             } else {
@@ -522,15 +521,26 @@ class quiz_oralexam_report extends quiz_default_report {
     protected function render_inline_scripts() {
         ?>
         <script>
+        function normalizeSearchText(str) {
+            if (!str) return '';
+            return str.toLowerCase()
+                .replace(/[\u064B-\u065F\u0670]/g, '') // Remove Arabic tashkeel/diacritics
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/ى/g, 'ي')
+                .trim();
+        }
+
         function filterCandidates() {
             var input = document.getElementById('candidateSearch');
-            var filter = input.value.toLowerCase();
+            var filter = normalizeSearchText(input.value);
             var ul = document.getElementById('candidateList');
             if (!ul) return;
             var li = ul.getElementsByTagName('li');
             for (var i = 0; i < li.length; i++) {
-                var name = li[i].getAttribute('data-name');
-                if (name && name.indexOf(filter) > -1) {
+                var rawName = li[i].getAttribute('data-name') || '';
+                var name = normalizeSearchText(rawName);
+                if (!filter || name.indexOf(filter) > -1) {
                     li[i].style.display = "";
                 } else {
                     li[i].style.display = "none";
@@ -573,7 +583,8 @@ class quiz_oralexam_report extends quiz_default_report {
 
             var confirmMsg = '';
             if (emptyCount > 0) {
-                confirmMsg = "⚠️ تنبيه: يوجد " + emptyCount + " سؤال لم يتم رصد درجات لها.\nسيتم احتساب الأسئلة المتروكة تلقائياً بدرجة (صفر).\n\nهل تريد المتابعة وحفظ واعتماد التقييم؟";
+                var tpl = <?php echo json_encode(get_string('unratedwarning', 'quiz_oralexam', '{{count}}')); ?>;
+                confirmMsg = tpl.replace('{{count}}', emptyCount);
             } else {
                 confirmMsg = <?php echo json_encode(get_string('confirmfinish', 'quiz_oralexam')); ?>;
             }

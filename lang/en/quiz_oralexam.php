@@ -77,3 +77,6 @@ $string['oralexamnotice_desc'] = 'This assessment is conducted and evaluated dir
 $string['recordingattempt'] = 'Recording Attempt #{$a}';
 $string['resumingattempt'] = 'Resuming In-Progress Attempt #{$a}';
 $string['prevattempts'] = 'Previous Attempts:';
+$string['clickstudentprompt'] = 'Select a student from the sidebar list to open their oral evaluation sheet and record marks.';
+$string['studentnotenrolled'] = 'The selected student is not enrolled in this course.';
+$string['unratedwarning'] = 'Warning: There are {$a} questions without marks.\nUnrated questions will automatically be assigned (0.0).\n\nDo you want to proceed and finalize the evaluation?';

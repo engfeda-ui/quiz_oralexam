@@ -3,7 +3,7 @@
 [![Moodle Compatibility](https://img.shields.io/badge/Moodle-4.0%20to%205.0%2B-orange.svg?style=flat-square)](https://moodle.org)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.1.3-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.1.4-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE / Technical Workshops)**. It allows examiners and instructors to directly assess students question-by-question live on behalf of the student without student submission, linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -42,6 +42,14 @@ Then visit **Site administration > Notifications** to complete the installation.
 ---
 
 ## 📋 Changelog
+
+### v1.1.4 (2026-09-08)
+- **Security & Parameter Hardening:** Changed `$action` parameter handling from `PARAM_ALPHA` to `PARAM_ALPHANUMEXT` (ensuring `submit_eval` passes cleanly) and sanitized user feedback notes via `PARAM_CLEANHTML`.
+- **Database Optimization (No N+1 Queries):** Replaced per-candidate loop queries in `evaluator::get_candidates()` with a single batch `quiz_attempts` fetch, and unified `get_question_competencies()` into an optimized prioritized SQL query.
+- **Course Enrollment Verification:** Added explicit `is_enrolled()` check in `submit_evaluation()` before accepting assessments.
+- **Enhanced Bilingual i18n:** Added translation strings for empty student prompt, enrollment errors, and unrated question warning modal (`clickstudentprompt`, `studentnotenrolled`, `unratedwarning`).
+- **Normalized Arabic Search:** Enhanced live student search filter with Arabic diacritics removal and character normalization (أ/إ/آ -> ا, ة -> ه, ى -> ي).
+- **Codebase & CSS Cleanup:** Eliminated duplicate `.oralexam-controls-card` definition in `styles.css`, fixed redundant `global $DB` declaration, and secured competency idnumber output escaping.
 
 ### v1.1.3 (2026-09-08)
 - **Automatic Multi-Attempt Incrementing:** Each evaluation recorded for a student with completed attempts now creates a brand new attempt (#1, #2, #3, ...) in `quiz_attempts` and updates Moodle Gradebook results.

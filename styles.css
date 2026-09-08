@@ -74,7 +74,9 @@
     border: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 /* Main Two-Column Grid */
@@ -284,19 +286,6 @@
 }
 
 /* Controls Bar */
-.oralexam-controls-card {
-    background: #ffffff;
-    padding: 12px 18px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
 /* Right Content Area */
 .oralexam-sheet-card {
     background: #ffffff;
