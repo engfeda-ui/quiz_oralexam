@@ -416,10 +416,11 @@ class quiz_oralexam_report extends quiz_default_report {
 
             // Examiner notes on this question.
             echo html_writer::start_div('qcard-comment-wrapper mt-2');
+            $feedbackval = ($q->currentfeedback !== 'Array' && $q->currentfeedback !== null) ? $q->currentfeedback : '';
             echo html_writer::tag('input', '', [
                 'type' => 'text',
                 'name' => "feedback[$slot]",
-                'value' => $q->currentfeedback,
+                'value' => $feedbackval,
                 'placeholder' => get_string('examinernotes', 'quiz_oralexam'),
                 'class' => 'form-control form-control-sm text-muted',
             ]);

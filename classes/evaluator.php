@@ -193,7 +193,17 @@ class evaluator {
                     $qa = $quba->get_question_attempt($slotno);
                     if ($qa) {
                         $currentmark = $qa->get_mark();
-                        $currentfeedback = (string)$qa->get_manual_comment();
+                        $rawcomment = $qa->get_manual_comment();
+                        if (is_array($rawcomment) && isset($rawcomment[0])) {
+                            $currentfeedback = (string)$rawcomment[0];
+                        } else if (is_string($rawcomment)) {
+                            $currentfeedback = $rawcomment;
+                        } else {
+                            $currentfeedback = '';
+                        }
+                        if (trim($currentfeedback) === 'Array') {
+                            $currentfeedback = '';
+                        }
                     }
                 } catch (\Exception $e) {
                     // Slot not in usage yet.
@@ -344,6 +354,9 @@ class evaluator {
             }
 
             $comment = isset($comments[$slotno]) ? clean_text($comments[$slotno]) : '';
+            if (trim($comment) === 'Array') {
+                $comment = '';
+            }
 
             $quba->manual_grade($slotno, $comment, $mark, FORMAT_HTML);
         }
