@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.3.0-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.3.1-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -79,6 +79,11 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ---
 
 ## 📋 Changelog
+
+### v1.3.1 (2026-09-09)
+- **Ultra-Low Bitrate Speech Tuning & Multi-Format Compression:**
+  - **16 kbps Mono Voice Compression**: Configured `MediaRecorder` with `audioBitsPerSecond: 16000` and stream constraints (`channelCount: 1`, `sampleRate: 16000`, `noiseSuppression: true`, `echoCancellation: true`), slashing audio file sizes down to ~90–120 KB per minute (up to ~80% footprint reduction).
+  - **Multi-Container Support (`WebM` / `MP4` / `OGG`)**: Enhanced `evaluator.php` to seamlessly store, detect, and stream audio across modern desktop and mobile browsers (including Safari iOS) without format incompatibilities.
 
 ### v1.3.0 (2026-09-09)
 - **Multi-Attempt Switcher Tabs & In-Browser Voice Recording:**

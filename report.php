@@ -749,11 +749,26 @@ class quiz_oralexam_report extends quiz_default_report {
         async function getMicStream() {
             if (mediaStream) return mediaStream;
             try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // High-efficiency speech audio: Mono channel, 16kHz speech sample rate, with noise cancellation.
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
                 return mediaStream;
             } catch (err) {
-                alert({$micnotallowedmsg});
-                return null;
+                // Fallback to basic audio constraints if advanced constraints fail.
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    return mediaStream;
+                } catch (fallbackErr) {
+                    alert({$micnotallowedmsg});
+                    return null;
+                }
             }
         }
 
@@ -773,13 +788,17 @@ class quiz_oralexam_report extends quiz_default_report {
                 return;
             }
 
-            // Start recording.
+            // Start recording with ultra-low bitrate Opus speech tuning (16 kbps mono = ~120 KB/min).
             var stream = await getMicStream();
             if (!stream) return;
 
-            var options = {};
+            var options = {
+                audioBitsPerSecond: 16000
+            };
             if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
                 options.mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                options.mimeType = 'audio/ogg;codecs=opus';
             } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
                 options.mimeType = 'audio/mp4';
             }

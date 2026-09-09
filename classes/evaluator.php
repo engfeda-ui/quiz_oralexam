@@ -233,17 +233,20 @@ class evaluator {
                 if ($cm) {
                     $context = \context_module::instance($cm->id);
                     $fs = get_file_storage();
-                    $audiofile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attemptid, '/', 'slot_' . $slotno . '.webm');
-                    if ($audiofile && !$audiofile->is_directory()) {
-                        $hasaudio = true;
-                        $audiourl = \moodle_url::make_pluginfile_url(
-                            $context->id,
-                            'quiz_oralexam',
-                            'audio_recordings',
-                            $attemptid,
-                            '/',
-                            'slot_' . $slotno . '.webm'
-                        )->out(false);
+                    foreach (['webm', 'mp4', 'ogg'] as $ext) {
+                        $audiofile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attemptid, '/', 'slot_' . $slotno . '.' . $ext);
+                        if ($audiofile && !$audiofile->is_directory()) {
+                            $hasaudio = true;
+                            $audiourl = \moodle_url::make_pluginfile_url(
+                                $context->id,
+                                'quiz_oralexam',
+                                'audio_recordings',
+                                $attemptid,
+                                '/',
+                                $audiofile->get_filename()
+                            )->out(false);
+                            break;
+                        }
                     }
                 }
             }
@@ -409,14 +412,23 @@ class evaluator {
             // Save audio recording if submitted for this slot.
             if (!empty($audiodata[$slotno])) {
                 $rawb64 = $audiodata[$slotno];
+                $ext = 'webm';
+                if (strpos($rawb64, 'audio/mp4') !== false) {
+                    $ext = 'mp4';
+                } else if (strpos($rawb64, 'audio/ogg') !== false) {
+                    $ext = 'ogg';
+                }
                 if (strpos($rawb64, 'base64,') !== false) {
                     $rawb64 = substr($rawb64, strpos($rawb64, 'base64,') + 7);
                 }
                 $binary = base64_decode($rawb64);
                 if (!empty($binary)) {
-                    $existingfile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attempt->id, '/', 'slot_' . $slotno . '.webm');
-                    if ($existingfile) {
-                        $existingfile->delete();
+                    // Clean previous recording with any supported extension.
+                    foreach (['webm', 'mp4', 'ogg'] as $e) {
+                        $existingfile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attempt->id, '/', 'slot_' . $slotno . '.' . $e);
+                        if ($existingfile) {
+                            $existingfile->delete();
+                        }
                     }
                     $filerecord = [
                         'contextid' => $context->id,
@@ -424,22 +436,29 @@ class evaluator {
                         'filearea'  => 'audio_recordings',
                         'itemid'    => $attempt->id,
                         'filepath'  => '/',
-                        'filename'  => 'slot_' . $slotno . '.webm',
+                        'filename'  => 'slot_' . $slotno . '.' . $ext,
                     ];
                     $fs->create_file_from_string($filerecord, $binary);
                 }
             }
 
             // If an audio recording exists for this slot & attempt, embed it in feedback for Moodle review.php view.
-            $audiofile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attempt->id, '/', 'slot_' . $slotno . '.webm');
-            if ($audiofile && !$audiofile->is_directory()) {
+            $audiofile = null;
+            foreach (['webm', 'mp4', 'ogg'] as $e) {
+                $f = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attempt->id, '/', 'slot_' . $slotno . '.' . $e);
+                if ($f && !$f->is_directory()) {
+                    $audiofile = $f;
+                    break;
+                }
+            }
+            if ($audiofile) {
                 $audiourl = \moodle_url::make_pluginfile_url(
                     $context->id,
                     'quiz_oralexam',
                     'audio_recordings',
                     $attempt->id,
                     '/',
-                    'slot_' . $slotno . '.webm'
+                    $audiofile->get_filename()
                 )->out(false);
 
                 $playerhtml = '<div class="oralexam-review-player" style="margin: 8px 0;">' .
