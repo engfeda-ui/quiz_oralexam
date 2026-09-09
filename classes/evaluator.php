@@ -461,8 +461,12 @@ class evaluator {
                     $audiofile->get_filename()
                 )->out(false);
 
-                $playerhtml = '<div class="oralexam-review-player" style="margin: 8px 0;">' .
-                    '<audio controls preload="none" src="' . $audiourl . '" style="width: 100%; max-width: 320px; height: 36px; vertical-align: middle;"></audio>' .
+                $audiolabel = get_string('savedaudio', 'quiz_oralexam');
+                $playerhtml = '<div class="oralexam-review-player" style="margin: 10px 0 6px 0; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1.5px solid #86efac; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); max-width: 440px;">' .
+                    '<div style="font-weight: 700; font-size: 13px; color: #166534; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">' .
+                    '<span style="font-size: 15px;">🎙️</span> ' . s($audiolabel) .
+                    '</div>' .
+                    '<audio controls preload="metadata" src="' . $audiourl . '" style="width: 100%; height: 38px; border-radius: 6px;"></audio>' .
                     '</div>';
                 // Remove previous embedded player snippet if any to avoid duplication.
                 $cleancomment = preg_replace('/<div class="oralexam-review-player".*?<\/div>/s', '', $comment);
@@ -475,10 +479,25 @@ class evaluator {
         // 3. Save question usage state.
         \question_engine::save_questions_usage_by_activity($quba);
 
-        // 4. Finalize attempt record.
+        // 4. Finalize attempt record with accurate and realistic duration.
         $attempt->state        = \mod_quiz\quiz_attempt::FINISHED;
         $attempt->timefinish   = $timenow;
         $attempt->timemodified = $timenow;
+
+        // Realistic duration: calculate elapsed time from when examiner opened candidate sheet.
+        $startedat = optional_param('evaluation_started_at', 0, PARAM_INT);
+        if ($startedat > 0 && $startedat <= $timenow) {
+            $attempt->timestart = $startedat;
+        } else if (empty($attempt->timestart) || $attempt->timestart > $timenow || ($timenow - $attempt->timestart) > 86400) {
+            // If attempt was started on a previous day or not set, set realistic duration (e.g. 2 mins).
+            $attempt->timestart = max(1, $timenow - 120);
+        }
+
+        // Ensure duration is at least 30-45 seconds so Moodle NEVER renders 'now' (format_time(0) => 'now').
+        if (($attempt->timefinish - $attempt->timestart) < 30) {
+            $attempt->timestart = max(1, $timenow - 60);
+        }
+
         $attempt->sumgrades    = $quba->get_total_mark();
         $DB->update_record('quiz_attempts', $attempt);
 

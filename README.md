@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.3.1-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.3.2-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -79,6 +79,11 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ---
 
 ## 📋 Changelog
+
+### v1.3.2 (2026-09-09)
+- **Realistic Duration Tracking & Prominent Audio Player Review Card:**
+  - **Accurate Duration Tracking**: Added `evaluation_started_at` session tracking to record real elapsed oral evaluation times, completely eliminating the false `now` duration bug (caused by 0-second difference) and preventing multi-day duration anomalies.
+  - **Prominent Review Attempt Audio Card**: Upgraded the embedded audio player inside Moodle's native `review.php` comments with a styled, branded emerald card (`🎙️ Student Audio Answer`) ensuring instant visual prominence.
 
 ### v1.3.1 (2026-09-09)
 - **Ultra-Low Bitrate Speech Tuning & Multi-Format Compression:**

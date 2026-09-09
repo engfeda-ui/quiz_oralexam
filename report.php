@@ -464,6 +464,7 @@ class quiz_oralexam_report extends quiz_default_report {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'group', 'value' => $currgrp]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'attemptid', 'value' => $targetattemptid]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'newattempt', 'value' => $isnewattempt]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'evaluation_started_at', 'value' => time()]);
 
         // Questions List.
         echo html_writer::start_div('oralexam-questions-deck');
