@@ -74,14 +74,27 @@ class quiz_oralexam_report extends quiz_default_report {
         $PAGE->set_pagelayout('incourse');
         $PAGE->requires->css('/mod/quiz/report/oralexam/styles.css');
 
-        // NOTE: Oral exam mode is intentionally NOT auto-enabled here.
-        // It must be explicitly enabled by a teacher through the quiz settings form.
-        // Auto-enabling on page load caused regular quizzes to be permanently locked as oral exams.
+        // Verify whether this quiz is explicitly configured as an oral / practical exam.
+        $isoral = false;
+        if (!empty($quiz->oralexamenabled)) {
+            $isoral = true;
+        } else if ($DB->get_manager()->table_exists('quizaccess_oralexam')) {
+            $isoral = (bool)$DB->record_exists('quizaccess_oralexam', [
+                'quizid'          => $quiz->id,
+                'oralexamenabled' => 1,
+            ]);
+        }
 
         // Handle POST submission: Save evaluation.
         $ispost = data_submitted() && confirm_sesskey();
         $issubmit = ($action === 'submit_eval' || optional_param('action', '', PARAM_ALPHANUMEXT) === 'submit_eval');
         if ($ispost && $canevaluate && $issubmit) {
+            // Strict safeguard: Reject any grade submission if the quiz is not an oral exam.
+            if (!$isoral) {
+                \core\notification::error(get_string('notanoralexam_title', 'quiz_oralexam'));
+                redirect($baseurl);
+            }
+
             $poststudentid = required_param('student', PARAM_INT);
             $postmarks = optional_param_array('marks', [], PARAM_FLOAT);
             $postfeedback = optional_param_array('feedback', [], PARAM_CLEANHTML);
@@ -121,6 +134,12 @@ class quiz_oralexam_report extends quiz_default_report {
 
         // Print header.
         $this->print_header_and_tabs($cm, $course, $quiz, 'oralexam');
+
+        // If this quiz is not configured as an oral exam, show advisory message and halt rendering.
+        if (!$isoral) {
+            $this->render_not_oral_banner($quiz, $cm, $course, $context);
+            return true;
+        }
 
         // Fetch students only.
         $candidates = \quiz_oralexam\evaluator::get_candidates($course->id, $context, $quiz->id, $selectedgroup);
@@ -532,6 +551,46 @@ class quiz_oralexam_report extends quiz_default_report {
 
         echo html_writer::end_tag('form');
         echo html_writer::end_div(); // End Sheet Card.
+    }
+
+    /**
+     * Render an informative advisory card when the quiz is not configured as an oral exam.
+     *
+     * @param \stdClass $quiz The quiz record.
+     * @param \stdClass $cm The course module record.
+     * @param \stdClass $course The course record.
+     * @param \context $context The module context.
+     * @return void
+     */
+    protected function render_not_oral_banner($quiz, $cm, $course, $context) {
+        $canedit = has_capability('moodle/course:manageactivities', $context);
+        $settingsurl = new \moodle_url('/course/modedit.php', ['update' => $cm->id, 'return' => 1]);
+        $resultsurl = new \moodle_url('/mod/quiz/report.php', ['id' => $cm->id, 'mode' => 'overview']);
+
+        echo \html_writer::start_div('oralexam-container');
+        echo '<div class="card shadow-sm border-0 my-4" style="border-radius: 14px; overflow: hidden; background: #ffffff; border: 1px solid #e2e8f0 !important;">';
+        echo '  <div class="card-body p-4 p-md-5 text-center" style="max-width: 820px; margin: 0 auto;">';
+        echo '    <div class="mb-4 d-inline-flex align-items-center justify-content-center" ' .
+            'style="width: 84px; height: 84px; border-radius: 50%; background: #eff6ff; color: #0284c7;">';
+        echo '      <i class="fa fa-microphone-slash fa-3x"></i>';
+        echo '    </div>';
+        echo '    <h3 class="font-weight-bold mb-3 text-dark">' .
+            get_string('notanoralexam_title', 'quiz_oralexam') . '</h3>';
+        echo '    <p class="text-muted lead mb-4" style="font-size: 1.05rem; line-height: 1.8;">' .
+            get_string('notanoralexam_desc', 'quiz_oralexam') . '</p>';
+        echo '    <div class="d-flex align-items-center justify-content-center flex-wrap gap-2 pt-2">';
+        if ($canedit) {
+            echo '      <a href="' . $settingsurl->out(false) . '" class="btn btn-primary btn-lg font-weight-bold shadow-sm px-4 m-1">';
+            echo '        <i class="fa fa-cog mr-2"></i> ' . get_string('gotoquizsettings', 'quiz_oralexam');
+            echo '      </a>';
+        }
+        echo '      <a href="' . $resultsurl->out(false) . '" class="btn btn-outline-secondary btn-lg font-weight-bold px-4 m-1">';
+        echo '        <i class="fa fa-list-alt mr-2"></i> ' . get_string('viewquizresults', 'quiz_oralexam');
+        echo '      </a>';
+        echo '    </div>';
+        echo '  </div>';
+        echo '</div>';
+        echo \html_writer::end_div();
     }
 
     /**

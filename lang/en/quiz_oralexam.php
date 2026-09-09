@@ -48,12 +48,15 @@ $string['full'] = '100% (Full)';
 $string['generalfeedback'] = 'Overall Oral Exam Remarks';
 $string['generalfeedback_placeholder'] = 'Enter any overarching observations, communication skills assessment, ' .
     'or general remarks for this student...';
+$string['gotoquizsettings'] = 'Enable Oral Exam in Settings';
 $string['half'] = '50% (Half)';
 $string['lastattemptgrade'] = 'Current Grade: {$a->grade} / {$a->maxgrade} ({$a->percent}%)';
 $string['maxmark'] = 'Max: {$a} pts';
 $string['newattempt'] = 'Record New Attempt (Retake)';
 $string['nocompetency'] = 'No competency linked';
 $string['nostudentsfound'] = 'No enrolled students found matching the selected group or filter.';
+$string['notanoralexam_desc'] = 'Direct oral grading is disabled because this assessment is not designated as an Oral / Practical Exam in its settings. Students can attempt and submit answers normally. If this assessment is intended to be evaluated in-person by an examiner, please enable "Oral & Practical Exam" in the quiz settings.';
+$string['notanoralexam_title'] = 'This Quiz is Not Configured as an Oral Exam';
 $string['oralexam'] = 'Oral Evaluation';
 $string['oralexam:evaluate'] = 'Conduct and submit oral exam evaluations';
 $string['oralexam:view'] = 'View oral exam evaluations';
