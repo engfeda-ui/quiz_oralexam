@@ -74,18 +74,9 @@ class quiz_oralexam_report extends quiz_default_report {
         $PAGE->set_pagelayout('incourse');
         $PAGE->requires->css('/mod/quiz/report/oralexam/styles.css');
 
-        // Auto-ensure quizaccess_oralexam is enabled for this quiz when opened in oral evaluation mode.
-        if ($canevaluate && $DB->get_manager()->table_exists('quizaccess_oralexam')) {
-            $rule = $DB->get_record('quizaccess_oralexam', ['quizid' => $quiz->id]);
-            if (!$rule) {
-                $DB->insert_record('quizaccess_oralexam', (object)[
-                    'quizid'          => $quiz->id,
-                    'oralexamenabled' => 1,
-                ]);
-            } else if (empty($rule->oralexamenabled)) {
-                $DB->set_field('quizaccess_oralexam', 'oralexamenabled', 1, ['quizid' => $quiz->id]);
-            }
-        }
+        // NOTE: Oral exam mode is intentionally NOT auto-enabled here.
+        // It must be explicitly enabled by a teacher through the quiz settings form.
+        // Auto-enabling on page load caused regular quizzes to be permanently locked as oral exams.
 
         // Handle POST submission: Save evaluation.
         $ispost = data_submitted() && confirm_sesskey();

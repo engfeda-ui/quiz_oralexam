@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.1.9-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.2.0-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -87,6 +87,12 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 
 ### v1.1.5 (2026-09-08)
 - **Fixed Form POST Routing & Redirect Loop:** Added mandatory hidden routing fields (`id`, `mode=oralexam`, `sesskey`, `action=submitevaluation`, and `studentid`) and used unescaped `$PAGE->url->out(false)` to prevent query parameters from being stripped by browser form submissions.
+
+### v1.2.0 (2026-09-09)
+- **Critical Bug Fix — Prevent Accidental Oral Exam Conversion:**
+  - Removed the dangerous auto-enable block in `report.php` that was silently converting any regular quiz to an oral exam the moment a teacher opened the Oral Evaluation tab.
+  - Oral exam mode (`oralexamenabled`) must now be explicitly set by a teacher through the quiz Settings form (`Edit settings`); it is never toggled automatically on page load.
+  - This prevents the permanent lock-out of students from regular quizzes that had already been completed.
 
 ### v1.1.4 (2026-09-08)
 - **Comprehensive Security & Architecture Audit:**
