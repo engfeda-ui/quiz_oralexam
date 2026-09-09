@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.2.1-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.3.0-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -14,6 +14,8 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ## ✨ Features
 
 - **🎯 Examiner Live Scoring Station:** Evaluate candidates in real-time question-by-question during oral exams, lab demonstrations, or OSCE assessments.
+- **🎙️ Live In-Browser Voice Recording:** Record student verbal responses live question-by-question using lightweight, crystal-clear Opus audio compression with instant preview and Moodle File API secure storage.
+- **🔄 Multi-Attempt Navigation & Retakes:** Seamless attempt switcher tabs to browse and review past attempts, hear their audio answers, or start a dedicated new attempt (Retake).
 - **⚡ One-Click Quick Scores:** Instant scoring buttons for `0% (Zero)`, `50% (Half)`, and `100% (Full)` alongside fine-tuned decimal inputs for maximum grading efficiency.
 - **📊 Real-Time Gradebook Synchronization:** Automatically records question attempts, step data, and sum of grades directly into core Moodle gradebook tables ({quiz_attempts}, {quiz_grades}) upon submission.
 - **🧭 Dynamic Candidate Roster:**
@@ -21,7 +23,6 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
   - Cohort and group filtering seamlessly integrated with Moodle course groups.
   - Instant visual status indicators: compact circular pending status (🕒) and evaluated score pill (e.g. `30 pts`).
 - **🎯 Competency Tagging & Mapping:** Pulls competency tags directly from questions mapped via `qbank_comp_ext`, providing examiners with clear mastery rubrics.
-- **🔄 Multi-Attempt & Retake Tracking:** Full audit trail for sequential oral attempts and retakes with individual feedback notes per question.
 - **🛡️ Enterprise-Ready Integrations:**
   - **Security Companion:** Enforces mutual dependency on [`quizaccess_oralexam`](https://github.com/engfeda-ui/quizaccess_oralexam) to prevent students from attempting oral exams independently.
   - **GDPR Privacy Compliance:** Implements Moodle's Privacy Subsystem (`null_provider`) adhering to GDPR regulations.
@@ -71,12 +72,20 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
    - The instructor opens the Quiz and selects **Results > Oral Evaluation** from the secondary navigation tab.
    - Select a student from the sidebar candidate list.
    - Grade each question live as the student responds verbally or performs the task.
+   - (Optional) Record the student's verbal answer using the **Record Voice Answer** button.
    - Enter optional examiner notes/feedback for each question.
-   - Click **Save & Finalize Assessment** — the grade is immediately committed to the official Moodle Gradebook.
+   - Click **Save & Finalize Assessment** — the grade and voice recordings are immediately committed to Moodle.
 
 ---
 
 ## 📋 Changelog
+
+### v1.3.0 (2026-09-09)
+- **Multi-Attempt Switcher Tabs & In-Browser Voice Recording:**
+  - **Multi-Attempt Navigation Tabs**: When viewing an evaluated candidate, examiners can seamlessly switch between past finished attempts (Attempt #1, Attempt #2...) to review past marks, notes, and audio answers.
+  - **Explicit Retake Initiation**: Dedicated `[ ➕ Record New Attempt (Retake) ]` action button opens a fresh, blank evaluation form without overwriting previous attempts.
+  - **Live HTML5 Voice Recording**: Integrated MediaRecorder per question allowing examiners to record student oral answers live in lightweight Opus WebM/MP4 format with live timers and instant playback preview.
+  - **Enterprise Audio Storage & Dual-View Playback**: Audio recordings are saved securely in Moodle File Storage API (`audio_recordings`) via `lib.php:quiz_oralexam_pluginfile()` and play back both in the Oral Evaluation station and within Moodle's native Review Attempt (`review.php`) page.
 
 ### v1.2.1 (2026-09-09)
 - **Disable Oral Evaluation Station for Regular Quizzes:**

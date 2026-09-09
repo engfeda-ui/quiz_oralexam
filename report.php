@@ -101,13 +101,14 @@ class quiz_oralexam_report extends quiz_default_report {
             $generalnotes = optional_param('generalfeedback', '', PARAM_CLEANHTML);
             $targetattemptid = optional_param('attemptid', 0, PARAM_INT);
             $postnewattempt = optional_param('newattempt', 0, PARAM_INT);
+            $postaudio = optional_param_array('audiodata', [], PARAM_RAW_TRIMMED);
 
             if ($postnewattempt || $isnewattempt) {
                 $targetattemptid = 0; // Force brand new attempt.
             }
 
             try {
-                \quiz_oralexam\evaluator::submit_evaluation(
+                $savedattempt = \quiz_oralexam\evaluator::submit_evaluation(
                     $quiz,
                     $cm,
                     $course,
@@ -115,7 +116,8 @@ class quiz_oralexam_report extends quiz_default_report {
                     $postmarks,
                     $postfeedback,
                     $generalnotes,
-                    $targetattemptid
+                    $targetattemptid,
+                    $postaudio
                 );
 
                 $studentrec = $DB->get_record('user', ['id' => $poststudentid], 'firstname, lastname');
@@ -123,9 +125,12 @@ class quiz_oralexam_report extends quiz_default_report {
 
                 \core\notification::success(get_string('evaluationsaved', 'quiz_oralexam', $studentname));
 
-                // Redirect back keeping candidate selected.
+                // Redirect back keeping candidate selected and viewing the saved attempt.
                 $redirecturl = clone $baseurl;
                 $redirecturl->param('student', $poststudentid);
+                if (!empty($savedattempt) && !empty($savedattempt->id)) {
+                    $redirecturl->param('attemptid', $savedattempt->id);
+                }
                 redirect($redirecturl);
             } catch (\Throwable $e) {
                 \core\notification::error(get_string('evaluationfailed', 'quiz_oralexam') . ' ' . $e->getMessage());
@@ -340,25 +345,44 @@ class quiz_oralexam_report extends quiz_default_report {
         $allattempts = $DB->get_records('quiz_attempts', ['quiz' => $quiz->id, 'userid' => $u->id], 'attempt ASC');
         $attemptcount = count($allattempts);
 
-        // Check if there is an in-progress attempt.
+        $finishedattempts = [];
         $unfinishedattempt = null;
         foreach ($allattempts as $att) {
-            if ($att->state !== \mod_quiz\quiz_attempt::FINISHED && $att->state !== 'finished') {
+            if ($att->state === \mod_quiz\quiz_attempt::FINISHED || $att->state === 'finished') {
+                $finishedattempts[$att->id] = $att;
+            } else {
                 $unfinishedattempt = $att;
-                break;
             }
         }
 
+        // Determine target attempt to render.
+        $paramattemptid = optional_param('attemptid', 0, PARAM_INT);
         $targetattemptid = 0;
         $attemptlabel = '';
-        if ($unfinishedattempt) {
-            $targetattemptid = (int)$unfinishedattempt->id;
-            $attemptlabel = get_string('resumingattempt', 'quiz_oralexam', $unfinishedattempt->attempt);
-        } else {
-            // Every evaluation session is recorded as a BRAND NEW attempt!
+        $iscreatingnew = false;
+
+        if ($isnewattempt) {
             $targetattemptid = 0;
             $newnum = $attemptcount + 1;
             $attemptlabel = get_string('recordingattempt', 'quiz_oralexam', $newnum);
+            $iscreatingnew = true;
+        } else if ($paramattemptid > 0 && isset($allattempts[$paramattemptid])) {
+            $targetattemptid = $paramattemptid;
+            $selatt = $allattempts[$paramattemptid];
+            $attemptlabel = '#' . $selatt->attempt . ' (' . round($selatt->sumgrades, 1) . ' pts)';
+        } else if ($unfinishedattempt) {
+            $targetattemptid = (int)$unfinishedattempt->id;
+            $attemptlabel = get_string('resumingattempt', 'quiz_oralexam', $unfinishedattempt->attempt);
+        } else if (!empty($finishedattempts)) {
+            // Default to latest finished attempt so examiner reviews past marks/audio!
+            $latest = end($finishedattempts);
+            $targetattemptid = (int)$latest->id;
+            $attemptlabel = '#' . $latest->attempt . ' (' . round($latest->sumgrades, 1) . ' pts)';
+        } else {
+            // Brand new attempt #1
+            $targetattemptid = 0;
+            $attemptlabel = get_string('recordingattempt', 'quiz_oralexam', 1);
+            $iscreatingnew = true;
         }
 
         $questions = \quiz_oralexam\evaluator::get_quiz_questions(
@@ -383,27 +407,40 @@ class quiz_oralexam_report extends quiz_default_report {
         echo html_writer::end_div();
         echo html_writer::end_div();
 
-        // Right side of header: Current Attempt badge and previous history.
+        // Right side of header: Current Attempt badge.
         echo html_writer::start_div('student-header-actions text-right');
         echo html_writer::tag('span', '<i class="fa fa-pencil mr-1"></i> ' . $attemptlabel, [
             'class' => 'badge badge-primary p-2 font-weight-bold shadow-sm',
             'style' => 'font-size: 0.95rem;',
         ]);
-        if (!empty($allattempts)) {
-            echo html_writer::start_div('mt-2 text-muted small');
-            echo html_writer::tag('strong', get_string('prevattempts', 'quiz_oralexam') . ' ');
-            $attlabels = [];
-            foreach ($allattempts as $a) {
-                if ($a->state === 'finished' || $a->state === \mod_quiz\quiz_attempt::FINISHED) {
-                    $sc = ($a->sumgrades !== null) ? round($a->sumgrades, 1) : 0;
-                    $attlabels[] = '#' . $a->attempt . ' (' . $sc . ' pts)';
-                }
-            }
-            echo implode(' | ', $attlabels);
-            echo html_writer::end_div();
-        }
         echo html_writer::end_div();
         echo html_writer::end_div(); // End Header Bar.
+
+        // Multi-Attempt Switcher Tabs Bar.
+        if (!empty($finishedattempts) || $attemptcount > 0) {
+            echo html_writer::start_div('oralexam-attempt-nav-bar');
+            echo html_writer::start_tag('ul', ['class' => 'oralexam-attempt-tabs-list']);
+            foreach ($finishedattempts as $fatt) {
+                $isactive = (!$iscreatingnew && $fatt->id == $targetattemptid);
+                $taburl = clone $baseurl;
+                $taburl->params(['student' => $u->id, 'attemptid' => $fatt->id]);
+                $tabsc = ($fatt->sumgrades !== null) ? round($fatt->sumgrades, 1) : 0;
+                echo '<li class="attempt-tab-item' . ($isactive ? ' active' : '') . '">';
+                echo '<a href="' . $taburl->out(false) . '">';
+                echo '<i class="fa fa-history mr-1"></i> ' . get_string('questionno', 'quiz_oralexam', $fatt->attempt) . ' ';
+                echo '<span class="badge-score">' . $tabsc . ' pts</span>';
+                echo '</a></li>';
+            }
+            echo html_writer::end_tag('ul');
+
+            // Button to record a new attempt (retake).
+            $newatturl = clone $baseurl;
+            $newatturl->params(['student' => $u->id, 'newattempt' => 1]);
+            echo '<a href="' . $newatturl->out(false) . '" class="btn-new-attempt' . ($iscreatingnew ? ' active' : '') . '">';
+            echo '<i class="fa fa-plus-circle mr-1"></i> ' . get_string('recordnewattempt', 'quiz_oralexam');
+            echo '</a>';
+            echo html_writer::end_div(); // End attempt nav bar.
+        }
 
         // Form start.
         $actionurl = new moodle_url('/mod/quiz/report.php', [
@@ -463,6 +500,31 @@ class quiz_oralexam_report extends quiz_default_report {
                 echo html_writer::tag('span', get_string('nocompetency', 'quiz_oralexam'), ['class' => 'comp-pill text-muted']);
             }
             echo html_writer::end_div(); // End Competencies.
+
+            // Audio Recording / Playback Section.
+            echo html_writer::start_div('qcard-audio-section', ['id' => 'audio-sec-' . $slot]);
+            echo html_writer::start_div('audio-section-header');
+            echo html_writer::tag('span', '<i class="fa fa-microphone text-primary mr-1"></i> ' . get_string('recordaudio', 'quiz_oralexam'));
+            echo html_writer::end_div();
+
+            echo html_writer::start_div('audio-controls-row');
+            if (!empty($q->hasaudio) && !empty($q->audiourl)) {
+                echo '<div class="audio-player-wrap existing-audio" id="existing-audio-' . $slot . '">';
+                echo '  <audio controls preload="none" src="' . $q->audiourl . '"></audio>';
+                echo '</div>';
+            }
+
+            echo '<button type="button" class="btn-record-audio" id="rec-btn-' . $slot . '" onclick="toggleRecord(' . $slot . ')">';
+            echo '<i class="fa fa-circle text-danger mr-1" id="rec-dot-' . $slot . '"></i> <span id="rec-label-' . $slot . '">' . get_string('recordaudio', 'quiz_oralexam') . '</span>';
+            echo '</button>';
+            echo '<div class="audio-live-timer" id="timer-' . $slot . '">🔴 <span id="time-val-' . $slot . '">00:00</span></div>';
+            echo '<div class="audio-player-wrap new-preview" id="preview-wrap-' . $slot . '" style="display:none;">';
+            echo '  <audio id="audio-preview-' . $slot . '" controls></audio>';
+            echo '  <button type="button" class="btn-discard-audio" onclick="discardAudio(' . $slot . ')"><i class="fa fa-trash mr-1"></i> ' . get_string('discardaudio', 'quiz_oralexam') . '</button>';
+            echo '</div>';
+            echo '<input type="hidden" name="audiodata[' . $slot . ']" id="audiodata-' . $slot . '" value="">';
+            echo html_writer::end_div(); // End audio-controls-row.
+            echo html_writer::end_div(); // End qcard-audio-section.
 
             // Scoring Bar.
             echo html_writer::start_div('qcard-scoring-bar');
@@ -621,6 +683,10 @@ class quiz_oralexam_report extends quiz_default_report {
         $warnmsg = json_encode(get_string('unratedwarning', 'quiz_oralexam', '{{count}}'));
         $confirmmsg = json_encode(get_string('confirmfinish', 'quiz_oralexam'));
         $submittingmsg = json_encode(get_string('submitting', 'quiz_oralexam'));
+        $recordaudiomsg = json_encode(get_string('recordaudio', 'quiz_oralexam'));
+        $stoprecordingmsg = json_encode(get_string('stoprecording', 'quiz_oralexam'));
+        $rerecordmsg = json_encode(get_string('rerecord', 'quiz_oralexam'));
+        $micnotallowedmsg = json_encode(get_string('micnotallowed', 'quiz_oralexam'));
 
         $js = <<<JS
         function normalizeSearchText(str) {
@@ -673,7 +739,143 @@ class quiz_oralexam_report extends quiz_default_report {
             }
         }
 
+        /* Audio Recording State */
+        var activeMediaRecorders = {};
+        var activeAudioChunks = {};
+        var activeTimers = {};
+        var timerSeconds = {};
+        var mediaStream = null;
+
+        async function getMicStream() {
+            if (mediaStream) return mediaStream;
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                return mediaStream;
+            } catch (err) {
+                alert({$micnotallowedmsg});
+                return null;
+            }
+        }
+
+        async function toggleRecord(slot) {
+            var recBtn = document.getElementById('rec-btn-' + slot);
+            var timerEl = document.getElementById('timer-' + slot);
+            var timeVal = document.getElementById('time-val-' + slot);
+            var labelEl = document.getElementById('rec-label-' + slot);
+
+            // If currently recording, STOP.
+            if (activeMediaRecorders[slot] && activeMediaRecorders[slot].state === 'recording') {
+                activeMediaRecorders[slot].stop();
+                clearInterval(activeTimers[slot]);
+                if (recBtn) recBtn.classList.remove('recording');
+                if (labelEl) labelEl.innerText = {$rerecordmsg};
+                if (timerEl) timerEl.style.display = 'none';
+                return;
+            }
+
+            // Start recording.
+            var stream = await getMicStream();
+            if (!stream) return;
+
+            var options = {};
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options.mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                options.mimeType = 'audio/mp4';
+            }
+
+            try {
+                var mr = new MediaRecorder(stream, options);
+                activeMediaRecorders[slot] = mr;
+                activeAudioChunks[slot] = [];
+
+                mr.ondataavailable = function(e) {
+                    if (e.data && e.data.size > 0) {
+                        activeAudioChunks[slot].push(e.data);
+                    }
+                };
+
+                mr.onstop = function() {
+                    var mime = mr.mimeType || 'audio/webm';
+                    var blob = new Blob(activeAudioChunks[slot], { type: mime });
+                    var previewWrap = document.getElementById('preview-wrap-' + slot);
+                    var audioPreview = document.getElementById('audio-preview-' + slot);
+                    var hiddenInput = document.getElementById('audiodata-' + slot);
+
+                    if (audioPreview) {
+                        audioPreview.src = URL.createObjectURL(blob);
+                    }
+                    if (previewWrap) {
+                        previewWrap.style.display = 'flex';
+                    }
+
+                    // Convert blob to base64 for reliable form submission.
+                    var reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = function() {
+                        if (hiddenInput) {
+                            hiddenInput.value = reader.result;
+                        }
+                    };
+                };
+
+                mr.start(250); // Record in 250ms time slices
+
+                if (recBtn) recBtn.classList.add('recording');
+                if (labelEl) labelEl.innerText = {$stoprecordingmsg};
+                if (timerEl) timerEl.style.display = 'inline-flex';
+
+                var prevWrap = document.getElementById('preview-wrap-' + slot);
+                if (prevWrap) prevWrap.style.display = 'none';
+
+                timerSeconds[slot] = 0;
+                if (timeVal) timeVal.innerText = '00:00';
+                activeTimers[slot] = setInterval(function() {
+                    timerSeconds[slot]++;
+                    var m = Math.floor(timerSeconds[slot] / 60);
+                    var s = timerSeconds[slot] % 60;
+                    var str = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                    if (timeVal) timeVal.innerText = str;
+                }, 1000);
+
+            } catch (err) {
+                console.error('Audio recording initialization error:', err);
+            }
+        }
+
+        function discardAudio(slot) {
+            var previewWrap = document.getElementById('preview-wrap-' + slot);
+            var audioPreview = document.getElementById('audio-preview-' + slot);
+            var hiddenInput = document.getElementById('audiodata-' + slot);
+            var recBtn = document.getElementById('rec-btn-' + slot);
+            var labelEl = document.getElementById('rec-label-' + slot);
+
+            if (audioPreview) {
+                audioPreview.pause();
+                audioPreview.src = '';
+            }
+            if (previewWrap) {
+                previewWrap.style.display = 'none';
+            }
+            if (hiddenInput) {
+                hiddenInput.value = '';
+            }
+            if (labelEl) {
+                labelEl.innerText = {$recordaudiomsg};
+            }
+            if (recBtn) {
+                recBtn.classList.remove('recording');
+            }
+        }
+
         function confirmSubmit() {
+            // Stop any active recordings before submitting.
+            for (var slot in activeMediaRecorders) {
+                if (activeMediaRecorders[slot] && activeMediaRecorders[slot].state === 'recording') {
+                    toggleRecord(slot);
+                }
+            }
+
             var inputs = document.querySelectorAll('.mark-input');
             var emptyCount = 0;
             inputs.forEach(function(inp) {
@@ -706,7 +908,6 @@ class quiz_oralexam_report extends quiz_default_report {
             var btn = document.getElementById('submitOralExamBtn');
             if (btn) {
                 btn.innerText = {$submittingmsg};
-                // Allow form submit without synchronously disabling the button.
             }
             return true;
         }

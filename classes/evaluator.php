@@ -226,6 +226,28 @@ class evaluator {
                 }
             }
 
+            $audiourl = '';
+            $hasaudio = false;
+            if ($attemptid > 0) {
+                $cm = get_coursemodule_from_instance('quiz', $quizid, $courseid);
+                if ($cm) {
+                    $context = \context_module::instance($cm->id);
+                    $fs = get_file_storage();
+                    $audiofile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attemptid, '/', 'slot_' . $slotno . '.webm');
+                    if ($audiofile && !$audiofile->is_directory()) {
+                        $hasaudio = true;
+                        $audiourl = \moodle_url::make_pluginfile_url(
+                            $context->id,
+                            'quiz_oralexam',
+                            'audio_recordings',
+                            $attemptid,
+                            '/',
+                            'slot_' . $slotno . '.webm'
+                        )->out(false);
+                    }
+                }
+            }
+
             $questionsdata[] = (object)[
                 'slot'            => $slotno,
                 'slotindex'       => $slotindex++,
@@ -237,6 +259,8 @@ class evaluator {
                 'competencies'    => $comps,
                 'currentmark'     => $currentmark,
                 'currentfeedback' => $currentfeedback,
+                'hasaudio'        => $hasaudio,
+                'audiourl'        => $audiourl,
             ];
         }
 
@@ -309,7 +333,8 @@ class evaluator {
         array $marks,
         array $comments,
         string $generalfeedback = '',
-        int $existingattemptid = 0
+        int $existingattemptid = 0,
+        array $audiodata = []
     ) {
         global $DB, $USER;
 
@@ -324,20 +349,7 @@ class evaluator {
         $slots = $structure->get_slots();
         $timenow = time();
 
-        // Auto-lock and register this quiz as an Oral Exam in quizaccess_oralexam.
-        if ($DB->get_manager()->table_exists('quizaccess_oralexam')) {
-            $existingrule = $DB->get_record('quizaccess_oralexam', ['quizid' => $quiz->id]);
-            if (!$existingrule) {
-                $DB->insert_record('quizaccess_oralexam', (object)[
-                    'quizid'          => $quiz->id,
-                    'oralexamenabled' => 1,
-                ]);
-            } else if (empty($existingrule->oralexamenabled)) {
-                $DB->set_field('quizaccess_oralexam', 'oralexamenabled', 1, ['quizid' => $quiz->id]);
-            }
-        }
-
-        // Determine if we should reuse an in-progress attempt or start a brand new attempt.
+        // Determine if we should reuse/update an existing attempt or start a brand new attempt.
         $attempt = null;
         if ($existingattemptid > 0) {
             $existing = $DB->get_record('quiz_attempts', [
@@ -345,9 +357,7 @@ class evaluator {
                 'quiz'   => $quiz->id,
                 'userid' => $studentid,
             ]);
-            // Only reuse if the existing attempt is STILL IN PROGRESS!
-            // If the attempt was already FINISHED, create a BRAND NEW attempt!
-            if ($existing && $existing->state !== \mod_quiz\quiz_attempt::FINISHED && $existing->state !== 'finished') {
+            if ($existing) {
                 $attempt = $existing;
                 $quba = \question_engine::load_questions_usage_by_activity($attempt->uniqueid);
             }
@@ -375,7 +385,10 @@ class evaluator {
         // 1. In Moodle question engine, questions MUST be finished before manual_grade can be applied.
         $quba->finish_all_questions($timenow);
 
-        // 2. Apply examiner marks and feedback for each slot.
+        $context = \context_module::instance($cm->id);
+        $fs = get_file_storage();
+
+        // 2. Apply examiner marks, audio recordings, and feedback for each slot.
         foreach ($slots as $slot) {
             $slotno = (int)$slot->slot;
             $maxmark = (float)$slot->maxmark;
@@ -391,6 +404,50 @@ class evaluator {
             $comment = isset($comments[$slotno]) ? clean_text($comments[$slotno]) : '';
             if (trim($comment) === 'Array') {
                 $comment = '';
+            }
+
+            // Save audio recording if submitted for this slot.
+            if (!empty($audiodata[$slotno])) {
+                $rawb64 = $audiodata[$slotno];
+                if (strpos($rawb64, 'base64,') !== false) {
+                    $rawb64 = substr($rawb64, strpos($rawb64, 'base64,') + 7);
+                }
+                $binary = base64_decode($rawb64);
+                if (!empty($binary)) {
+                    $existingfile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attempt->id, '/', 'slot_' . $slotno . '.webm');
+                    if ($existingfile) {
+                        $existingfile->delete();
+                    }
+                    $filerecord = [
+                        'contextid' => $context->id,
+                        'component' => 'quiz_oralexam',
+                        'filearea'  => 'audio_recordings',
+                        'itemid'    => $attempt->id,
+                        'filepath'  => '/',
+                        'filename'  => 'slot_' . $slotno . '.webm',
+                    ];
+                    $fs->create_file_from_string($filerecord, $binary);
+                }
+            }
+
+            // If an audio recording exists for this slot & attempt, embed it in feedback for Moodle review.php view.
+            $audiofile = $fs->get_file($context->id, 'quiz_oralexam', 'audio_recordings', $attempt->id, '/', 'slot_' . $slotno . '.webm');
+            if ($audiofile && !$audiofile->is_directory()) {
+                $audiourl = \moodle_url::make_pluginfile_url(
+                    $context->id,
+                    'quiz_oralexam',
+                    'audio_recordings',
+                    $attempt->id,
+                    '/',
+                    'slot_' . $slotno . '.webm'
+                )->out(false);
+
+                $playerhtml = '<div class="oralexam-review-player" style="margin: 8px 0;">' .
+                    '<audio controls preload="none" src="' . $audiourl . '" style="width: 100%; max-width: 320px; height: 36px; vertical-align: middle;"></audio>' .
+                    '</div>';
+                // Remove previous embedded player snippet if any to avoid duplication.
+                $cleancomment = preg_replace('/<div class="oralexam-review-player".*?<\/div>/s', '', $comment);
+                $comment = trim($cleancomment) . "\n" . $playerhtml;
             }
 
             $quba->manual_grade($slotno, $comment, $mark, FORMAT_HTML);
