@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.4.0-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.4.1-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -14,6 +14,7 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ## ✨ Features
 
 - **🎯 Examiner Live Scoring Station:** Evaluate candidates in real-time question-by-question during oral exams, lab demonstrations, or OSCE assessments.
+- **🏷️ Prominent Header Competency Badges:** Live competency pill integrated directly into each question card header with dedicated color themes, icons, and localized Arabic/English competency names (Operation, Troubleshooting, Testing & Inspection, Safety).
 - **🎛️ Instant Multi-Model Switcher (A / B / C / All):** Instant visual filtering for multi-variant oral exams. Examiners can filter question cards down to a single candidate's assigned model with zero screen clutter, while automatically documenting the tested model.
 - **🎙️ Live In-Browser Voice Recording:** Record student verbal responses live question-by-question using lightweight, crystal-clear Opus audio compression with instant preview and Moodle File API secure storage.
 - **🔄 Multi-Attempt Navigation & Retakes:** Seamless attempt switcher tabs to browse and review past attempts, hear their audio answers, or start a dedicated new attempt (Retake).
@@ -80,6 +81,16 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ---
 
 ## 📋 Changelog
+
+### v1.4.1 (2026-09-10)
+- **Prominent Header Competency Badges & Dedicated Theming:**
+  - **Header-Integrated Competency Pill**: Promoted the competency indicator directly into each question card's header next to the question number, giving examiners immediate visual clarity.
+  - **Color-Coded Mastery Domains**:
+    - ⚙️ **Operation (التشغيل)**: Royal Blue theme.
+    - 🔧 **Troubleshooting (استكشاف الأعطال)**: Amber / Orange theme.
+    - 📋 **Testing & Inspection (الفحص والتفتيش)**: Violet / Purple theme.
+    - 🛡️ **Safety (السلامة المهنية)**: Emerald / Green theme.
+  - **Clean Bilingual Titles**: Formats raw technical tags (e.g. `comp-Operation`) into clean, human-readable titles in Arabic & English (`الجدارة: التشغيل (Operation)`).
 
 ### v1.4.0 (2026-09-10)
 - **Instant Multi-Model Switcher & Candidate Model Auto-Documentation:**

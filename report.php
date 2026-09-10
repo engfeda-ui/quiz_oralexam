@@ -491,29 +491,30 @@ class quiz_oralexam_report extends quiz_default_report {
 
             // Question Header.
             echo html_writer::start_div('qcard-header');
+            echo html_writer::start_div('qcard-header-left');
             $qnobadge = get_string('questionno', 'quiz_oralexam', $q->slotindex);
             echo html_writer::tag('span', $qnobadge, ['class' => 'qcard-slot-badge']);
+
+            // Prominent Competency Badge in Header.
+            if (!empty($q->competencies)) {
+                foreach ($q->competencies as $comp) {
+                    $binfo = self::format_competency_badge($comp);
+                    echo html_writer::start_span('comp-header-badge ' . $binfo['class'], ['title' => s($comp->description ?: $binfo['text'])]);
+                    echo html_writer::tag('i', '', ['class' => 'fa ' . $binfo['icon'] . ' mr-1']);
+                    echo html_writer::tag('span', $binfo['text'], ['class' => 'comp-badge-text']);
+                    echo html_writer::end_span();
+                }
+            } else {
+                echo html_writer::tag('span', get_string('nocompetency', 'quiz_oralexam'), ['class' => 'comp-header-badge comp-badge-none text-muted']);
+            }
+            echo html_writer::end_div(); // End Header Left.
+
             echo html_writer::tag('span', get_string('maxmark', 'quiz_oralexam', $maxmark), ['class' => 'qcard-maxmark-badge']);
-            echo html_writer::end_div();
+            echo html_writer::end_div(); // End Header.
 
             // Question Text.
             echo html_writer::start_div('qcard-body');
             echo html_writer::div($q->questiontext, 'qcard-questiontext');
-
-            // Competency Badges.
-            echo html_writer::start_div('qcard-competencies');
-            if (!empty($q->competencies)) {
-                foreach ($q->competencies as $comp) {
-                    $comptitle = s($comp->shortname ?: $comp->idnumber);
-                    echo html_writer::start_span('comp-pill', ['title' => s($comp->description)]);
-                    echo html_writer::tag('i', '', ['class' => 'fa fa-tags mr-1']);
-                    echo html_writer::tag('span', s($comp->idnumber) . ' - ' . $comptitle, ['class' => 'comp-pill-text']);
-                    echo html_writer::end_span();
-                }
-            } else {
-                echo html_writer::tag('span', get_string('nocompetency', 'quiz_oralexam'), ['class' => 'comp-pill text-muted']);
-            }
-            echo html_writer::end_div(); // End Competencies.
 
             // Audio Recording / Playback Section.
             echo html_writer::start_div('qcard-audio-section', ['id' => 'audio-sec-' . $slot]);
@@ -639,6 +640,57 @@ class quiz_oralexam_report extends quiz_default_report {
 
         echo html_writer::end_tag('form');
         echo html_writer::end_div(); // End Sheet Card.
+    }
+
+    /**
+     * Format a competency record into a user-friendly badge with localized title and theme color.
+     *
+     * @param object $comp The competency object.
+     * @return array Badge metadata (icon, class, text, raw).
+     */
+    protected static function format_competency_badge($comp): array {
+        $raw = trim($comp->shortname ?: $comp->idnumber);
+        // Clean off comp- or comp_ prefix.
+        $clean = preg_replace('/^comp[-_]/i', '', $raw);
+        $clean = trim($clean);
+
+        $lower = strtolower($clean);
+        $icon = 'fa-tag';
+        $class = 'comp-badge-generic';
+        $label_ar = $clean;
+        $label_en = $clean;
+
+        if (strpos($lower, 'operat') !== false) {
+            $icon = 'fa-cogs';
+            $class = 'comp-badge-operation';
+            $label_ar = 'التشغيل';
+            $label_en = 'Operation';
+        } else if (strpos($lower, 'trouble') !== false) {
+            $icon = 'fa-wrench';
+            $class = 'comp-badge-troubleshooting';
+            $label_ar = 'استكشاف الأعطال';
+            $label_en = 'Troubleshooting';
+        } else if (strpos($lower, 'inspect') !== false || strpos($lower, 'test') !== false) {
+            $icon = 'fa-check-square-o';
+            $class = 'comp-badge-inspection';
+            $label_ar = 'الفحص والتفتيش';
+            $label_en = 'Testing & Inspection';
+        } else if (strpos($lower, 'safe') !== false) {
+            $icon = 'fa-shield';
+            $class = 'comp-badge-safety';
+            $label_ar = 'السلامة المهنية';
+            $label_en = 'Safety';
+        }
+
+        $is_ar = (current_language() === 'ar');
+        $display_text = $is_ar ? "الجدارة: {$label_ar} ({$label_en})" : "Competency: {$label_en} ({$label_ar})";
+
+        return [
+            'icon'  => $icon,
+            'class' => $class,
+            'text'  => $display_text,
+            'raw'   => $clean,
+        ];
     }
 
     /**
