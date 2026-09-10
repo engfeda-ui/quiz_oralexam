@@ -514,7 +514,7 @@ class quiz_oralexam_report extends quiz_default_report {
 
             // Question Text.
             echo html_writer::start_div('qcard-body');
-            echo html_writer::div($q->questiontext, 'qcard-questiontext');
+            echo html_writer::div($q->questiontext, 'qcard-questiontext', ['dir' => 'auto']);
 
             // Audio Recording / Playback Section.
             echo html_writer::start_div('qcard-audio-section', ['id' => 'audio-sec-' . $slot]);
@@ -596,6 +596,7 @@ class quiz_oralexam_report extends quiz_default_report {
                 'value' => $feedbackval,
                 'placeholder' => get_string('examinernotes', 'quiz_oralexam'),
                 'class' => 'form-control form-control-sm text-muted',
+                'dir' => 'auto',
             ]);
             echo html_writer::end_div();
 
@@ -614,6 +615,7 @@ class quiz_oralexam_report extends quiz_default_report {
             'rows'        => 3,
             'class'       => 'form-control',
             'placeholder' => get_string('generalfeedback_placeholder', 'quiz_oralexam'),
+            'dir'         => 'auto',
         ]);
         echo html_writer::end_div();
 

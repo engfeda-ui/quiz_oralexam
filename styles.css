@@ -448,9 +448,46 @@
 
 .qcard-questiontext {
     font-size: 1rem;
-    line-height: 1.55;
+    line-height: 1.6;
     color: #1e293b;
     margin-bottom: 12px;
+    direction: rtl;
+    text-align: right;
+    unicode-bidi: isolate;
+}
+
+/* Explicit Oral Exam Question Bank Cards & Models RTL Support */
+.oral-q-container,
+.oral-model,
+.oral-model-a,
+.oral-model-b,
+.oral-model-c {
+    direction: rtl !important;
+    text-align: right !important;
+    unicode-bidi: isolate !important;
+}
+
+.oral-q-container *,
+.oral-model * {
+    text-align: right;
+}
+
+.oral-model {
+    border-right-width: 4px !important;
+    border-left-width: 0 !important;
+}
+
+/* Graceful fallback if question container is explicitly set to LTR */
+.qcard-questiontext[dir="ltr"],
+.oral-q-container[dir="ltr"] {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+.qcard-questiontext[dir="ltr"] *,
+.oral-q-container[dir="ltr"] * {
+    direction: ltr;
+    text-align: left;
 }
 
 /* Competency Pill */

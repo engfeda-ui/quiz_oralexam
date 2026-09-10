@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.4.1-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.4.2-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -81,6 +81,13 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ---
 
 ## 📋 Changelog
+
+### v1.4.2 (2026-09-10)
+- **Comprehensive RTL & Bi-Directional Layout Support:**
+  - **Native RTL Alignment for Questions & Model Cards**: Enforced right-to-left text direction (`direction: rtl; text-align: right; unicode-bidi: isolate;`) on `.oral-q-container`, `.oral-model`, and `.qcard-questiontext`.
+  - **Seamless Mixed Arabic & English Rendering**: Arabic question phrasing, technical English terminology (e.g. `Fixed Water Spray`), punctuation (e.g. `؟`), and model badges render in proper reading order, regardless of whether Moodle's UI language is set to English (`dir="ltr"`) or Arabic (`dir="rtl"`).
+  - **Right-Border Accent Alignment**: Perfectly aligned model visual card borders on the right side next to the text start.
+  - **Dynamic Input Auto-Direction (`dir="auto"`)**: Added auto text direction detection for per-question examiner notes and the overall remarks textarea.
 
 ### v1.4.1 (2026-09-10)
 - **Prominent Header Competency Badges & Dedicated Theming:**
