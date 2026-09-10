@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)](https://php.net)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20MySQL%20%7C%20MariaDB-purple.svg?style=flat-square)](https://docs.moodle.org)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?style=flat-square)](http://www.gnu.org/copyleft/gpl.html)
-[![Version](https://img.shields.io/badge/Version-v1.3.2-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
+[![Version](https://img.shields.io/badge/Version-v1.4.0-blue.svg?style=flat-square)](https://github.com/engfeda-ui/quiz_oralexam)
 
 A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Practical Examinations (OSCE, Oral Defenses, and Technical Workshop assessments)**. It allows examiners and instructors to directly assess and grade students question-by-question live on behalf of the student without requiring student self-submission, while linking each question directly to its competency from `qbank_comp_ext`.
 
@@ -14,6 +14,7 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ## ✨ Features
 
 - **🎯 Examiner Live Scoring Station:** Evaluate candidates in real-time question-by-question during oral exams, lab demonstrations, or OSCE assessments.
+- **🎛️ Instant Multi-Model Switcher (A / B / C / All):** Instant visual filtering for multi-variant oral exams. Examiners can filter question cards down to a single candidate's assigned model with zero screen clutter, while automatically documenting the tested model.
 - **🎙️ Live In-Browser Voice Recording:** Record student verbal responses live question-by-question using lightweight, crystal-clear Opus audio compression with instant preview and Moodle File API secure storage.
 - **🔄 Multi-Attempt Navigation & Retakes:** Seamless attempt switcher tabs to browse and review past attempts, hear their audio answers, or start a dedicated new attempt (Retake).
 - **⚡ One-Click Quick Scores:** Instant scoring buttons for `0% (Zero)`, `50% (Half)`, and `100% (Full)` alongside fine-tuned decimal inputs for maximum grading efficiency.
@@ -79,6 +80,14 @@ A specialized Moodle Quiz Report sub-plugin designed for **in-person Oral and Pr
 ---
 
 ## 📋 Changelog
+
+### v1.4.0 (2026-09-10)
+- **Instant Multi-Model Switcher & Candidate Model Auto-Documentation:**
+  - **Interactive Model Filter Bar**: Added an ergonomic model switcher bar (`[ All Models ]`, `[ 🔹 Model A ]`, `[ 🔸 Model B ]`, `[ 🟢 Model C ]`) directly above the question deck on the evaluation station.
+  - **Dynamic Card Filtering**: Clicking any model button instantly filters all 40 questions on screen, displaying only the selected candidate's model variant with zero cognitive clutter.
+  - **Automatic Attempt Model Tagging**: Selecting a model automatically prefixes the candidate's general remarks with the model token (`[النموذج A]` / `[Model A]`), ensuring transparent academic traceability.
+  - **Overall Examiner Remarks Card**: Introduced an overarching remarks card allowing examiners to record global communication, demeanor, and technical observations.
+  - **40-Question Multi-Model GIFT Bank**: Bundled a complete 40-question, 3-model balanced GIFT question bank (`oral_exam_40_questions_bank.gift.txt`) covering Operation, Troubleshooting, Testing & Inspection, and Safety competencies.
 
 ### v1.3.2 (2026-09-09)
 - **Realistic Duration Tracking & Prominent Audio Player Review Card:**

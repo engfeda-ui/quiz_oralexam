@@ -95,3 +95,10 @@ $string['unratedwarning'] = "Warning: There are {$a} questions without marks.\n"
     "Do you want to proceed and finalize the evaluation?";
 $string['viewquizresults'] = 'View Official Gradebook & Results Table';
 $string['zero'] = '0% (Zero)';
+$string['selectmodel'] = 'Exam Model Filter';
+$string['allmodels'] = 'All Models';
+$string['modela'] = 'Model (A)';
+$string['modelb'] = 'Model (B)';
+$string['modelc'] = 'Model (C)';
+$string['model_chosen_note'] = 'Evaluated on Model: {$a}';
+

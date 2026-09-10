@@ -723,3 +723,126 @@
     color: #b91c1c;
 }
 
+/* ==========================================================================
+   Exam Model Filter Bar & Multi-Model Switching
+   ========================================================================== */
+
+.oralexam-model-selector-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.model-selector-info {
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+
+.model-buttons-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-model-select {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-model-select:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-model-select.active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.25);
+}
+
+.btn-model-select.model-a.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+}
+
+.btn-model-select.model-b.active {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+}
+
+.btn-model-select.model-c.active {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.35);
+}
+
+/* Dynamic Model Filtering in Questions Deck */
+.oralexam-questions-deck.filter-model-a .oral-model:not(.oral-model-a) {
+    display: none !important;
+}
+
+.oralexam-questions-deck.filter-model-b .oral-model:not(.oral-model-b) {
+    display: none !important;
+}
+
+.oralexam-questions-deck.filter-model-c .oral-model:not(.oral-model-c) {
+    display: none !important;
+}
+
+.oralexam-questions-deck.filter-model-a .oral-model-a,
+.oralexam-questions-deck.filter-model-b .oral-model-b,
+.oralexam-questions-deck.filter-model-c .oral-model-c {
+    box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.08) !important;
+    border-right-width: 6px !important;
+}
+
+/* General Examiner Remarks Card */
+.oralexam-general-feedback-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-header-remarks {
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+
+.oralexam-general-feedback-card textarea {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+.oralexam-general-feedback-card textarea:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+

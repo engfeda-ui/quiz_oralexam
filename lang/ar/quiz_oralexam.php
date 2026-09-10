@@ -93,3 +93,10 @@ $string['unratedwarning'] = "تنبيه: يوجد {$a} أسئلة لم يتم ر
     "هل ترغب في المتابعة واعتماد التقييم؟";
 $string['viewquizresults'] = 'معاينة سجل درجات الاختبار المعتمد';
 $string['zero'] = '0% (صفر)';
+$string['selectmodel'] = 'تصفية نموذج الاختبار';
+$string['allmodels'] = 'عرض جميع النماذج';
+$string['modela'] = 'نموذج (A) - مكافحة الحرائق';
+$string['modelb'] = 'نموذج (B) - تبريد التوربين';
+$string['modelc'] = 'نموذج (C) - مياه المحطة';
+$string['model_chosen_note'] = 'تم التقييم على النموذج: {$a}';
+

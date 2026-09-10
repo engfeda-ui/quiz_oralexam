@@ -466,6 +466,19 @@ class quiz_oralexam_report extends quiz_default_report {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'newattempt', 'value' => $isnewattempt]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'evaluation_started_at', 'value' => time()]);
 
+        // Model Switcher Bar (All, A, B, C).
+        echo html_writer::start_div('oralexam-model-selector-bar mb-3');
+        echo '<div class="model-selector-info">';
+        echo '<i class="fa fa-sliders text-primary mr-1"></i> <strong>' . get_string('selectmodel', 'quiz_oralexam') . '</strong>';
+        echo '</div>';
+        echo '<div class="model-buttons-group">';
+        echo '<button type="button" class="btn-model-select active" data-model="all" onclick="filterOralModel(\'all\')"><i class="fa fa-th-large mr-1"></i> ' . get_string('allmodels', 'quiz_oralexam') . '</button>';
+        echo '<button type="button" class="btn-model-select model-a" data-model="a" onclick="filterOralModel(\'a\')"><i class="fa fa-bookmark mr-1"></i> ' . get_string('modela', 'quiz_oralexam') . '</button>';
+        echo '<button type="button" class="btn-model-select model-b" data-model="b" onclick="filterOralModel(\'b\')"><i class="fa fa-bookmark mr-1"></i> ' . get_string('modelb', 'quiz_oralexam') . '</button>';
+        echo '<button type="button" class="btn-model-select model-c" data-model="c" onclick="filterOralModel(\'c\')"><i class="fa fa-bookmark mr-1"></i> ' . get_string('modelc', 'quiz_oralexam') . '</button>';
+        echo '</div>';
+        echo html_writer::end_div();
+
         // Questions List.
         echo html_writer::start_div('oralexam-questions-deck');
 
@@ -590,6 +603,18 @@ class quiz_oralexam_report extends quiz_default_report {
         }
 
         echo html_writer::end_div(); // End Questions Deck.
+
+        // General Examiner Remarks Card.
+        echo html_writer::start_div('oralexam-general-feedback-card mb-4');
+        echo '<div class="card-header-remarks mb-2"><i class="fa fa-commenting-o mr-1 text-primary"></i> <strong>' . get_string('generalfeedback', 'quiz_oralexam') . '</strong></div>';
+        echo html_writer::tag('textarea', '', [
+            'name'        => 'generalfeedback',
+            'id'          => 'oralGeneralFeedback',
+            'rows'        => 3,
+            'class'       => 'form-control',
+            'placeholder' => get_string('generalfeedback_placeholder', 'quiz_oralexam'),
+        ]);
+        echo html_writer::end_div();
 
         // Sticky Bottom Footer: Live Total & Submit Button.
         echo html_writer::start_div('oralexam-sticky-footer');
@@ -930,6 +955,32 @@ class quiz_oralexam_report extends quiz_default_report {
                 btn.innerText = {$submittingmsg};
             }
             return true;
+        }
+
+        function filterOralModel(model) {
+            document.querySelectorAll('.btn-model-select').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            var btn = document.querySelector('.btn-model-select[data-model="' + model + '"]');
+            if (btn) {
+                btn.classList.add('active');
+            }
+
+            var deck = document.querySelector('.oralexam-questions-deck');
+            if (!deck) return;
+
+            deck.classList.remove('filter-model-a', 'filter-model-b', 'filter-model-c');
+            if (model !== 'all') {
+                deck.classList.add('filter-model-' + model);
+            }
+
+            var gf = document.getElementById('oralGeneralFeedback');
+            if (gf && model !== 'all') {
+                var modelCode = model.toUpperCase();
+                var notePrefix = '[' + (document.documentElement.lang === 'ar' ? 'النموذج ' : 'Model ') + modelCode + ']';
+                var currentVal = gf.value.replace(/\[(النموذج |Model )[ABC]\]\s*/g, '').trim();
+                gf.value = notePrefix + (currentVal ? ' ' + currentVal : '');
+            }
         }
 
         // Initialize live total on load.
